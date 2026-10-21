@@ -8,7 +8,7 @@ app.use(cors()); // Permite peticiones desde el navegador sin bloqueos
 
 const app = express();
 app.use(express.json());
-app.use(cors());
+app.use(cors()); // Permite peticiones desde el navegador sin bloqueos
 
 const JWT_SECRET = process.env.JWT_SECRET || 'connecting_secreto_super_seguro';
 
