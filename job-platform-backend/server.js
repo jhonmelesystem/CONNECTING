@@ -1,12 +1,19 @@
 const express = require('express');
 const cors = require('cors');
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
+const path = require('path'); // <--- 1. Importa path
 const db = require('./database');
 require('dotenv').config();
 
-const app = express(); // <--- LA VARIABLE APP DEBE ESTAR AQUÍ ARRIBA
+const app = express();
 
+app.use(express.json());
+app.use(cors());
+
+// --- 2. SERVIR EL FRONTEND ESTÁTICO ---
+// (Asumiendo que tu index.html está dentro de una carpeta llamada 'public')
+app.use(express.static(path.join(__dirname, 'public')));
+
+// (O si tienes los archivos sueltos en la raíz, usa: app.use(express.static(__dirname));)
 // Middlewares esenciales
 app.use(express.json());
 app.use(cors()); // Permite peticiones desde el navegador sin bloqueos
