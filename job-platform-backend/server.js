@@ -4,13 +4,19 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('./database');
 require('dotenv').config();
-app.use(cors()); // Permite peticiones desde el navegador sin bloqueos
 
-const app = express();
+const app = express(); // <--- LA VARIABLE APP DEBE ESTAR AQUÍ ARRIBA
+
+// Middlewares esenciales
 app.use(express.json());
 app.use(cors()); // Permite peticiones desde el navegador sin bloqueos
 
 const JWT_SECRET = process.env.JWT_SECRET || 'connecting_secreto_super_seguro';
+
+// Ruta Raíz para verificar que el servidor responde en Railway
+app.get('/', (req, res) => {
+  res.send('🚀 Servidor API de CONNECTING activo y funcionando correctamente.');
+});
 
 // Middleware de autenticación
 function verifyToken(req, res, next) {
@@ -217,11 +223,7 @@ app.post('/api/jobs/:id/apply', verifyToken, async (req, res) => {
   }
 });
 
-app.get('/', (req, res) => {
-  res.send('🚀 Servidor API de CONNECTING activo y funcionando correctamente.');
-});
-
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`🚀 Servidor CONNECTING corriendo en el puerto ${PORT}`);
 });
