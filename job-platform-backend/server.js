@@ -4,7 +4,6 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('./database');
 require('dotenv').config();
-const cors = require('cors');
 app.use(cors()); // Permite peticiones desde el navegador sin bloqueos
 
 const app = express();
