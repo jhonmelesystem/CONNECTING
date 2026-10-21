@@ -1,22 +1,19 @@
 const express = require('express');
 const cors = require('cors');
-const path = require('path'); // <--- 1. Importa path
+const path = require('path');
+const bcrypt = require('bcryptjs'); // <--- ¡IMPORTANTE: Aquí está la solución al error!
+const jwt = require('jsonwebtoken');
 const db = require('./database');
 require('dotenv').config();
 
 const app = express();
 
+// Middlewares esenciales (únicos y limpios)
 app.use(express.json());
 app.use(cors());
 
-// --- 2. SERVIR EL FRONTEND ESTÁTICO ---
-// (Asumiendo que tu index.html está dentro de una carpeta llamada 'public')
+// Servir el frontend estático (asumiendo que tu index.html está en una carpeta llamada 'public')
 app.use(express.static(path.join(__dirname, 'public')));
-
-// (O si tienes los archivos sueltos en la raíz, usa: app.use(express.static(__dirname));)
-// Middlewares esenciales
-app.use(express.json());
-app.use(cors()); // Permite peticiones desde el navegador sin bloqueos
 
 const JWT_SECRET = process.env.JWT_SECRET || 'connecting_secreto_super_seguro';
 
