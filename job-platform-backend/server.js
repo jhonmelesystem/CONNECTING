@@ -4,6 +4,8 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const db = require('./database');
 require('dotenv').config();
+const cors = require('cors');
+app.use(cors()); // Permite peticiones desde el navegador sin bloqueos
 
 const app = express();
 app.use(express.json());
@@ -216,7 +218,11 @@ app.post('/api/jobs/:id/apply', verifyToken, async (req, res) => {
   }
 });
 
-const PORT = process.env.PORT || 4000;
+app.get('/', (req, res) => {
+  res.send('🚀 Servidor API de CONNECTING activo y funcionando correctamente.');
+});
+
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => {
   console.log(`🚀 Servidor CONNECTING corriendo en el puerto ${PORT}`);
 });
