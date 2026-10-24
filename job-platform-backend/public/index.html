@@ -46,7 +46,6 @@
 
         let tempProfilePicBase64 = '';
 
-        // CATÁLOGOS MASIVOS Y PROFESIONALES DE HABILIDADES, APTITUDES Y EXPERIENCIA
         const TECHNICAL_SKILLS = [
             'JavaScript', 'TypeScript', 'Node.js', 'Express', 'MySQL', 'PostgreSQL', 
             'React', 'Vue.js', 'Angular', 'HTML / CSS', 'Tailwind CSS', 'Python', 
@@ -70,16 +69,9 @@
         ];
 
         const LOCATIONS_LIST = [
-            'Santo Domingo, Distrito Nacional',
-            'Santo Domingo Este',
-            'Santo Domingo Norte',
-            'Santo Domingo Oeste',
-            'Bajos de Haina, San Cristóbal',
-            'Santiago de los Caballeros',
-            'La Romana',
-            'Punta Cana / Bávaro',
-            'San Francisco de Macorís',
-            'Puerto Plata',
+            'Santo Domingo, Distrito Nacional', 'Santo Domingo Este', 'Santo Domingo Norte',
+            'Santo Domingo Oeste', 'Bajos de Haina, San Cristóbal', 'Santiago de los Caballeros',
+            'La Romana', 'Punta Cana / Bávaro', 'San Francisco de Macorís', 'Puerto Plata',
             'Remoto (Global / Internacional)'
         ];
 
@@ -102,7 +94,7 @@
                 nav.innerHTML = `
                     <div class="flex items-center gap-2 mr-2 cursor-pointer" onclick="navigate('profile')">
                         ${state.profile_picture ? `<img src="${state.profile_picture}" class="w-8 h-8 rounded-full object-cover border border-blue-400">` : '<div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold">👤</div>'}
-                        <span class="font-medium hidden sm:inline text-gray-200">Hola, ${state.name || 'Usuario'}</span>
+                        <span class="font-medium hidden sm:inline text-gray-200">${state.name || 'Usuario'}</span>
                     </div>
                     <button onclick="navigate('profile')" class="bg-gray-800 px-3 py-1.5 rounded text-white font-medium hover:bg-gray-700 transition">Mi Perfil</button>
                     ${state.role === 'employer' ? '<button onclick="navigate(\'my-jobs\')" class="bg-emerald-600 px-3 py-1.5 rounded text-white font-medium hover:bg-emerald-500 transition">Mis Vacantes</button>' : ''}
@@ -174,7 +166,7 @@
 
                 <div class="mb-6">
                     <h2 class="text-2xl font-bold text-gray-800">Empleos Disponibles</h2>
-                    <p class="text-sm text-gray-600">Conectando talento dominicano y global con empresas líderes.</p>
+                    <p class="text-sm text-gray-600">Conectando talento con oportunidades en tiempo real.</p>
                 </div>
 
                 <div id="jobs-list" class="space-y-4">
@@ -216,6 +208,11 @@
                     if (job.modality === 'remoto') badge = '<span class="bg-green-100 text-green-800 text-xs px-2.5 py-1 rounded-full font-semibold">💻 Remoto</span>';
                     if (job.modality === 'hibrido') badge = '<span class="bg-purple-100 text-purple-800 text-xs px-2.5 py-1 rounded-full font-semibold">🔄 Híbrido</span>';
 
+                    // Corrección del botón según estado de sesión
+                    let actionButton = state.token
+                        ? `<button onclick="applyToJob(${job.id})" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">Postularme</button>`
+                        : `<button onclick="alert('Inicia sesión para ver detalles y postularte')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">Ver Detalle</button>`;
+
                     html += `
                         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
                             <div class="flex justify-between items-start">
@@ -231,17 +228,33 @@
                             <p class="text-gray-700 mt-3 text-sm line-clamp-2">${job.description}</p>
                             <div class="mt-4 flex justify-between items-center pt-3 border-t border-gray-50">
                                 <span class="text-sm font-semibold text-emerald-600">${job.salary_range || 'Salario a convenir'}</span>
-                                <button onclick="alert('Inicia sesión para postularte')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
-                                    Ver Detalle
-                                </button>
+                                ${actionButton}
                             </div>
                         </div>
                     `;
                 });
                 listContainer.innerHTML = html;
-            } catch (error) {
-                console.error(error);
+            } catch (error) { console.error(error); }
+        }
+
+        async function applyToJob(jobId) {
+            if (state.role !== 'candidate') {
+                alert('Solo las cuentas de Candidato pueden postularse a empleos.');
+                return;
             }
+
+            try {
+                const res = await fetch(`${API_URL}/jobs/${jobId}/apply`, {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${state.token}` }
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(data.message || '¡Postulación enviada correctamente!');
+                } else {
+                    alert(data.error);
+                }
+            } catch (err) { console.error(err); }
         }
 
         // ==================== AUTH ====================
@@ -360,7 +373,7 @@
             } catch (err) { console.error(err); }
         }
 
-        // ==================== APARTADO DE PERFIL DINÁMICO (CANDIDATO / EMPLEADOR) ====================
+        // ==================== PERFIL DE USUARIO ====================
         async function renderProfile(container) {
             tempProfilePicBase64 = state.profile_picture;
             let locationOptions = LOCATIONS_LIST.map(l => `<option value="${l}" ${state.location === l ? 'selected' : ''}>${l}</option>`).join('');
@@ -370,9 +383,9 @@
 
             container.innerHTML = `
                 <div class="max-w-2xl mx-auto space-y-6">
-                    <!-- Configuración General del Perfil -->
+                    <!-- Configuración General del Perfil (Sin la palabra Hola) -->
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h2 class="text-xl font-bold mb-4">Editar Perfil (${state.role === 'candidate' ? 'Candidato' : 'Empleador'})</h2>
+                        <h2 class="text-xl font-bold mb-4">${state.name || 'Perfil de Usuario'}</h2>
                         <form onsubmit="handleUpdateProfile(event)" class="space-y-4">
                             <div class="flex items-center gap-4 mb-4">
                                 ${state.profile_picture ? `<img src="${state.profile_picture}" class="w-16 h-16 rounded-full object-cover border">` : '<div class="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center font-bold text-xl">👤</div>'}
@@ -395,35 +408,86 @@
                         </form>
                     </div>
 
-                    <!-- Si es Candidato, gestionar Habilidades, Aptitudes y Experiencia -->
+                    <!-- Múltiples Habilidades sin Límite para Candidatos -->
                     ${state.role === 'candidate' ? `
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h3 class="text-lg font-bold mb-3">Mis Habilidades y Aptitudes Profesionales</h3>
-                        <p class="text-sm text-gray-600 mb-4">Selecciona de nuestra lista estandarizada para matchear con los empleadores.</p>
+                        <h3 class="text-lg font-bold mb-2">Mis Habilidades y Aptitudes Profesionales</h3>
+                        <p class="text-xs text-gray-500 mb-4">Agrega todas las habilidades y competencias que poseas para maximizar tu compatibilidad.</p>
                         
-                        <div class="space-y-3">
+                        <div class="space-y-3 mb-6">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Habilidad / Aptitud</label>
-                                <select id="skill-name" class="w-full border rounded-lg px-3 py-2 mt-1 bg-white">
-                                    <optgroup label="Habilidades Técnicas">
-                                        ${techOptions}
-                                    </optgroup>
-                                    <optgroup label="Aptitudes (Soft Skills)">
-                                        ${softOptions}
-                                    </optgroup>
+                                <label class="block text-sm font-medium text-gray-700">Seleccionar Habilidad / Aptitud</label>
+                                <select id="skill-name" class="w-full border rounded-lg px-3 py-2 mt-1 bg-white text-sm">
+                                    <optgroup label="Habilidades Técnicas">${techOptions}</optgroup>
+                                    <optgroup label="Aptitudes (Soft Skills)">${softOptions}</optgroup>
                                 </select>
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700">Años de Experiencia</label>
-                                <select id="skill-exp" class="w-full border rounded-lg px-3 py-2 mt-1 bg-white">
+                                <select id="skill-exp" class="w-full border rounded-lg px-3 py-2 mt-1 bg-white text-sm">
                                     ${expOptions}
                                 </select>
                             </div>
-                            <button onclick="addUserSkill()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">+ Agregar a mi Perfil</button>
+                            <button onclick="addUserSkill()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition">+ Agregar Habilidad</button>
+                        </div>
+
+                        <!-- Contenedor donde se listan las habilidades agregadas -->
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-700 mb-2">Habilidades Registradas:</h4>
+                            <div id="user-skills-badges" class="flex flex-wrap gap-2">
+                                <p class="text-xs text-gray-400">Cargando tus habilidades...</p>
+                            </div>
                         </div>
                     </div>` : ''}
                 </div>
             `;
+
+            if (state.role === 'candidate') {
+                loadUserSkills();
+            }
+        }
+
+        async function loadUserSkills() {
+            const badgesContainer = document.getElementById('user-skills-badges');
+            if (!badgesContainer) return;
+
+            try {
+                const res = await fetch(`${API_URL}/skills`, {
+                    headers: { 'Authorization': `Bearer ${state.token}` }
+                });
+                const skills = await res.json();
+
+                if (!skills || skills.length === 0) {
+                    badgesContainer.innerHTML = `<span class="text-xs text-gray-500 italic">No has agregado habilidades aún.</span>`;
+                    return;
+                }
+
+                badgesContainer.innerHTML = skills.map(s => `
+                    <span class="bg-blue-50 text-blue-700 border border-blue-200 text-xs px-3 py-1 rounded-full font-medium flex items-center gap-1">
+                        ⚡ ${s.skill_name} (${s.level} año/s)
+                    </span>
+                `).join('');
+            } catch (err) { console.error(err); }
+        }
+
+        async function addUserSkill() {
+            const skill_name = document.getElementById('skill-name').value;
+            const experience_years = document.getElementById('skill-exp').value;
+
+            try {
+                const res = await fetch(`${API_URL}/skills`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${state.token}`
+                    },
+                    body: JSON.stringify({ skill_name, experience_years: parseInt(experience_years) })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    loadUserSkills();
+                } else { alert(data.error); }
+            } catch (err) { console.error(err); }
         }
 
         async function handleUpdateProfile(e) {
@@ -455,27 +519,7 @@
             } catch (err) { console.error(err); }
         }
 
-        async function addUserSkill() {
-            const skill_name = document.getElementById('skill-name').value;
-            const experience_years = document.getElementById('skill-exp').value;
-
-            try {
-                const res = await fetch(`${API_URL}/skills`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${state.token}`
-                    },
-                    body: JSON.stringify({ skill_name, experience_years: parseInt(experience_years) })
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    alert('¡Habilidad/Aptitud guardada en tu perfil!');
-                } else { alert(data.error); }
-            } catch (err) { console.error(err); }
-        }
-
-        // ==================== EMPLEADOR: GESTIÓN Y EDICIÓN DE VACANTES ====================
+        // ==================== EMPLEADOR ====================
         async function renderEmployerJobs(container) {
             container.innerHTML = `
                 <div class="flex justify-between items-center mb-6">
@@ -596,7 +640,6 @@
             } catch (err) { console.error(err); }
         }
 
-        // ==================== EDITAR VACANTE ====================
         async function renderEditJob(container, jobId) {
             try {
                 const res = await fetch(`${API_URL}/employer/jobs`, {
