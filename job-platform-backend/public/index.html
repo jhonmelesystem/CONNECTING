@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CONNECTING - Plataforma de Empleos</title>
-    <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .ad-container {
@@ -15,22 +14,18 @@
 </head>
 <body class="bg-gray-100 text-gray-800 font-sans min-h-screen flex flex-col">
 
-    <!-- NAVEGACIÓN PRINCIPAL -->
+    <!-- NAVEGACIÓN -->
     <header class="bg-gray-900 text-white shadow-md sticky top-0 z-50">
         <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
             <h1 onclick="navigate('home')" class="text-xl font-bold tracking-wide cursor-pointer hover:text-blue-400 transition flex items-center gap-2">
                 ⚡ CONNECTING
             </h1>
-            <div id="nav-actions" class="flex items-center gap-3 text-sm">
-                <!-- Se llena dinámicamente con JS -->
-            </div>
+            <div id="nav-actions" class="flex items-center gap-3 text-sm"></div>
         </div>
     </header>
 
     <!-- CONTENEDOR PRINCIPAL -->
-    <main id="main-content" class="max-w-6xl mx-auto px-4 py-8 flex-grow w-full">
-        <!-- Vistas renderizadas vía JS -->
-    </main>
+    <main id="main-content" class="max-w-6xl mx-auto px-4 py-8 flex-grow w-full"></main>
 
     <!-- PIE DE PÁGINA -->
     <footer class="bg-gray-900 text-gray-400 text-center py-4 text-xs mt-auto">
@@ -40,26 +35,54 @@
     <script>
         const API_URL = '/api';
 
-        // ESTADO GLOBAL DE LA APLICACIÓN
         const state = {
             token: localStorage.getItem('token') || null,
             role: localStorage.getItem('role') || null,
             name: localStorage.getItem('name') || null,
+            location: localStorage.getItem('location') || '',
             profile_picture: localStorage.getItem('profile_picture') || '',
-            resume_url: localStorage.getItem('resume_url') || '',
             currentView: 'home'
         };
 
-        let tempProfilePicBase64 = ''; // Variable temporal para la foto seleccionada
+        let tempProfilePicBase64 = '';
 
-        // CATÁLOGO DE HABILIDADES PREDEFINIDAS
-        const PREDEFINED_SKILLS = [
-            'JavaScript', 'Node.js', 'Express', 'MySQL', 'React', 'HTML/CSS',
-            'Tailwind CSS', 'Python', 'Atención al Cliente', 'Ventas',
-            'Gestión de Proyectos', 'Diseño Gráfico', 'Inglés Avanzado'
+        // CATÁLOGOS MASIVOS Y PROFESIONALES DE HABILIDADES, APTITUDES Y EXPERIENCIA
+        const TECHNICAL_SKILLS = [
+            'JavaScript', 'TypeScript', 'Node.js', 'Express', 'MySQL', 'PostgreSQL', 
+            'React', 'Vue.js', 'Angular', 'HTML / CSS', 'Tailwind CSS', 'Python', 
+            'Django', 'PHP', 'Laravel', 'Java', 'Spring Boot', 'Flutter', 'React Native',
+            'Docker', 'Git / GitHub', 'AWS Cloud', 'Sistemas Operativos', 'Excel Avanzado',
+            'Administración de Servidores', 'Soporte Técnico IT', 'Redes y Conectividad'
         ];
 
-        // CONVERTIR ARCHIVO SELECCIONADO A BASE64
+        const SOFT_SKILLS = [
+            'Liderazgo', 'Trabajo en Equipo', 'Comunicación Efectiva', 'Resolución de Problemas',
+            'Pensamiento Crítico', 'Gestión del Tiempo', 'Adaptabilidad al Cambio', 'Negociación',
+            'Orientación a Resultados', 'Atención al Cliente', 'Empatía y Colaboración', 'Inteligencia Emocional'
+        ];
+
+        const EXPERIENCE_LEVELS = [
+            { value: 1, label: 'Menos de 1 año (Junior / Principiante)' },
+            { value: 2, label: '1 a 2 años de experiencia' },
+            { value: 3, label: '3 a 5 años de experiencia (Intermedio / Semi-Senior)' },
+            { value: 4, label: '5 a 8 años de experiencia (Senior)' },
+            { value: 5, label: 'Más de 8 años (Expert / Lead / Especialista)' }
+        ];
+
+        const LOCATIONS_LIST = [
+            'Santo Domingo, Distrito Nacional',
+            'Santo Domingo Este',
+            'Santo Domingo Norte',
+            'Santo Domingo Oeste',
+            'Bajos de Haina, San Cristóbal',
+            'Santiago de los Caballeros',
+            'La Romana',
+            'Punta Cana / Bávaro',
+            'San Francisco de Macorís',
+            'Puerto Plata',
+            'Remoto (Global / Internacional)'
+        ];
+
         function handleImageUpload(event) {
             const file = event.target.files[0];
             if (file) {
@@ -71,19 +94,18 @@
             }
         }
 
-        // ACTUALIZAR BARRA DE NAVEGACIÓN
         function updateNav() {
             const nav = document.getElementById('nav-actions');
             if (!nav) return;
 
             if (state.token) {
                 nav.innerHTML = `
-                    <div class="flex items-center gap-2 mr-2">
-                        ${state.profile_picture ? `<img src="${state.profile_picture}" class="w-7 h-7 rounded-full object-cover border border-gray-600">` : '<div class="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold">👤</div>'}
+                    <div class="flex items-center gap-2 mr-2 cursor-pointer" onclick="navigate('profile')">
+                        ${state.profile_picture ? `<img src="${state.profile_picture}" class="w-8 h-8 rounded-full object-cover border border-blue-400">` : '<div class="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold">👤</div>'}
                         <span class="font-medium hidden sm:inline text-gray-200">Hola, ${state.name || 'Usuario'}</span>
                     </div>
-                    ${state.role === 'candidate' ? '<button onclick="navigate(\'candidate-profile\')" class="bg-blue-800 px-3 py-1.5 rounded text-white font-medium hover:bg-blue-700 transition">Mi Perfil</button>' : ''}
-                    ${state.role === 'employer' ? '<button onclick="navigate(\'my-jobs\')" class="bg-emerald-600 px-3 py-1.5 rounded text-white font-medium hover:bg-emerald-500 transition">Mis Publicaciones</button>' : ''}
+                    <button onclick="navigate('profile')" class="bg-gray-800 px-3 py-1.5 rounded text-white font-medium hover:bg-gray-700 transition">Mi Perfil</button>
+                    ${state.role === 'employer' ? '<button onclick="navigate(\'my-jobs\')" class="bg-emerald-600 px-3 py-1.5 rounded text-white font-medium hover:bg-emerald-500 transition">Mis Vacantes</button>' : ''}
                     ${state.role === 'employer' ? '<button onclick="navigate(\'create-job\')" class="bg-blue-600 px-3 py-1.5 rounded text-white font-medium hover:bg-blue-500 transition">+ Publicar</button>' : ''}
                     <button onclick="logout()" class="bg-red-600 px-3 py-1.5 rounded text-white font-medium hover:bg-red-500 transition">Salir</button>
                 `;
@@ -105,8 +127,8 @@
             state.token = null;
             state.role = null;
             state.name = null;
+            state.location = '';
             state.profile_picture = '';
-            state.resume_url = '';
             navigate('home');
         }
 
@@ -117,35 +139,23 @@
             container.innerHTML = '';
 
             switch (state.currentView) {
-                case 'home':
-                    renderHome(container);
-                    break;
-                case 'login':
-                    renderLogin(container);
-                    break;
-                case 'register':
-                    renderRegister(container);
-                    break;
-                case 'candidate-profile':
-                    renderCandidateProfile(container);
-                    break;
-                case 'my-jobs':
-                    renderEmployerJobs(container);
-                    break;
-                case 'create-job':
-                    renderCreateJob(container);
-                    break;
-                default:
-                    renderHome(container);
+                case 'home': renderHome(container); break;
+                case 'login': renderLogin(container); break;
+                case 'register': renderRegister(container); break;
+                case 'profile': renderProfile(container); break;
+                case 'my-jobs': renderEmployerJobs(container); break;
+                case 'create-job': renderCreateJob(container); break;
+                case 'edit-job': renderEditJob(container, params); break;
+                default: renderHome(container);
             }
         }
 
-        // ==================== VISTA: HOME / FEED DE EMPLEOS ====================
+        // ==================== HOME ====================
         function renderHome(container) {
             container.innerHTML = `
                 <div class="bg-white p-4 rounded-xl shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-center justify-between border border-gray-100">
                     <div class="w-full md:w-1/2 relative">
-                        <input type="text" id="searchInput" placeholder="Buscar por puesto o palabra clave..." 
+                        <input type="text" id="searchInput" placeholder="Buscar por puesto, habilidad o sector..." 
                             class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                         <span class="absolute left-3 top-2.5 text-gray-400">🔍</span>
                     </div>
@@ -164,7 +174,7 @@
 
                 <div class="mb-6">
                     <h2 class="text-2xl font-bold text-gray-800">Empleos Disponibles</h2>
-                    <p class="text-sm text-gray-600">Smart Screening integrado para postulaciones rápidas y efectivas.</p>
+                    <p class="text-sm text-gray-600">Conectando talento dominicano y global con empresas líderes.</p>
                 </div>
 
                 <div id="jobs-list" class="space-y-4">
@@ -175,14 +185,11 @@
         }
 
         async function fetchFilteredJobs() {
-            const searchInput = document.getElementById('searchInput');
-            const modalityFilter = document.getElementById('modalityFilter');
+            const search = document.getElementById('searchInput')?.value || '';
+            const modality = document.getElementById('modalityFilter')?.value || 'all';
             const listContainer = document.getElementById('jobs-list');
 
             if (!listContainer) return;
-
-            const search = searchInput ? searchInput.value : '';
-            const modality = modalityFilter ? modalityFilter.value : 'all';
 
             try {
                 const res = await fetch(`${API_URL}/jobs?search=${encodeURIComponent(search)}&modality=${modality}`);
@@ -200,7 +207,7 @@
                             <div class="ad-container p-4 rounded-xl shadow-sm mb-4 text-center">
                                 <span class="text-[10px] bg-gray-500 text-white px-2 py-0.5 rounded font-bold uppercase">Patrocinado</span>
                                 <p class="text-sm font-semibold text-gray-800 mt-1">🚀 ¡Acelera tu carrera con tecnología de vanguardia!</p>
-                                <a href="#" class="text-xs text-blue-600 underline font-medium hover:text-blue-800">Conoce nuestras ofertas exclusivas</a>
+                                <a href="#" class="text-xs text-blue-600 underline font-medium">Conoce nuestras ofertas exclusivas</a>
                             </div>
                         `;
                     }
@@ -224,7 +231,7 @@
                             <p class="text-gray-700 mt-3 text-sm line-clamp-2">${job.description}</p>
                             <div class="mt-4 flex justify-between items-center pt-3 border-t border-gray-50">
                                 <span class="text-sm font-semibold text-emerald-600">${job.salary_range || 'Salario a convenir'}</span>
-                                <button onclick="alert('Inicia sesión para ver detalles y aplicar')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
+                                <button onclick="alert('Inicia sesión para postularte')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
                                     Ver Detalle
                                 </button>
                             </div>
@@ -233,12 +240,11 @@
                 });
                 listContainer.innerHTML = html;
             } catch (error) {
-                console.error('Error al cargar vacantes:', error);
-                listContainer.innerHTML = `<p class="text-red-500 text-center py-8">No se pudieron cargar las vacantes.</p>`;
+                console.error(error);
             }
         }
 
-        // ==================== AUTENTICACIÓN ====================
+        // ==================== AUTH ====================
         function renderLogin(container) {
             container.innerHTML = `
                 <div class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-sm border border-gray-100 mt-8">
@@ -275,26 +281,24 @@
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('role', data.role);
                     localStorage.setItem('name', data.name);
+                    localStorage.setItem('location', data.location || '');
                     localStorage.setItem('profile_picture', data.profile_picture || '');
-                    localStorage.setItem('resume_url', data.resume_url || '');
 
                     state.token = data.token;
                     state.role = data.role;
                     state.name = data.name;
+                    state.location = data.location || '';
                     state.profile_picture = data.profile_picture || '';
-                    state.resume_url = data.resume_url || '';
 
                     navigate('home');
-                } else {
-                    alert(data.error);
-                }
-            } catch (err) {
-                console.error(err);
-            }
+                } else { alert(data.error); }
+            } catch (err) { console.error(err); }
         }
 
         function renderRegister(container) {
-            tempProfilePicBase64 = ''; // Resetear
+            tempProfilePicBase64 = '';
+            let locationOptions = LOCATIONS_LIST.map(l => `<option value="${l}">${l}</option>`).join('');
+
             container.innerHTML = `
                 <div class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-sm border border-gray-100 mt-4">
                     <h2 class="text-xl font-bold mb-4 text-center">Crear Cuenta</h2>
@@ -319,8 +323,14 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">Foto de Perfil (Seleccionar Archivo)</label>
-                            <input type="file" id="reg-pic-file" accept="image/*" onchange="handleImageUpload(event)" class="w-full border rounded-lg px-3 py-1.5 mt-1 text-sm bg-white">
+                            <label class="block text-sm font-medium text-gray-700">Ubicación / Sector</label>
+                            <select id="reg-location" class="w-full border rounded-lg px-3 py-1.5 mt-1 bg-white">
+                                ${locationOptions}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Foto de Perfil</label>
+                            <input type="file" accept="image/*" onchange="handleImageUpload(event)" class="w-full border rounded-lg px-3 py-1.5 mt-1 text-sm bg-white">
                         </div>
                         <button type="submit" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-medium hover:bg-emerald-700 transition">Registrarse</button>
                     </form>
@@ -334,41 +344,146 @@
             const email = document.getElementById('reg-email').value;
             const password = document.getElementById('reg-password').value;
             const role = document.getElementById('reg-role').value;
+            const location = document.getElementById('reg-location').value;
 
             try {
                 const res = await fetch(`${API_URL}/register`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        name, 
-                        email, 
-                        password, 
-                        role, 
-                        profile_picture: tempProfilePicBase64 
-                    })
+                    body: JSON.stringify({ name, email, password, role, location, profile_picture: tempProfilePicBase64 })
                 });
                 const data = await res.json();
-
                 if (res.ok) {
-                    alert('¡Registro exitoso! Ahora puedes iniciar sesión.');
+                    alert('¡Registro exitoso! Inicia sesión.');
                     navigate('login');
-                } else {
-                    alert(data.error);
-                }
-            } catch (err) {
-                console.error(err);
-            }
+                } else { alert(data.error); }
+            } catch (err) { console.error(err); }
         }
 
-        // ==================== EMPLEADOR: MIS VACANTES ====================
+        // ==================== APARTADO DE PERFIL DINÁMICO (CANDIDATO / EMPLEADOR) ====================
+        async function renderProfile(container) {
+            tempProfilePicBase64 = state.profile_picture;
+            let locationOptions = LOCATIONS_LIST.map(l => `<option value="${l}" ${state.location === l ? 'selected' : ''}>${l}</option>`).join('');
+            let techOptions = TECHNICAL_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+            let softOptions = SOFT_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+            let expOptions = EXPERIENCE_LEVELS.map(e => `<option value="${e.value}">${e.label}</option>`).join('');
+
+            container.innerHTML = `
+                <div class="max-w-2xl mx-auto space-y-6">
+                    <!-- Configuración General del Perfil -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h2 class="text-xl font-bold mb-4">Editar Perfil (${state.role === 'candidate' ? 'Candidato' : 'Empleador'})</h2>
+                        <form onsubmit="handleUpdateProfile(event)" class="space-y-4">
+                            <div class="flex items-center gap-4 mb-4">
+                                ${state.profile_picture ? `<img src="${state.profile_picture}" class="w-16 h-16 rounded-full object-cover border">` : '<div class="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center font-bold text-xl">👤</div>'}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Cambiar Foto de Perfil</label>
+                                    <input type="file" accept="image/*" onchange="handleImageUpload(event)" class="text-sm mt-1">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Nombre / Empresa</label>
+                                <input type="text" id="prof-name" value="${state.name || ''}" required class="w-full border rounded-lg px-3 py-2 mt-1">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Ubicación / Sector</label>
+                                <select id="prof-location" class="w-full border rounded-lg px-3 py-2 mt-1 bg-white">
+                                    ${locationOptions}
+                                </select>
+                            </div>
+                            <button type="submit" class="bg-blue-600 text-white px-5 py-2 rounded-lg font-medium hover:bg-blue-700 transition">Guardar Cambios</button>
+                        </form>
+                    </div>
+
+                    <!-- Si es Candidato, gestionar Habilidades, Aptitudes y Experiencia -->
+                    ${state.role === 'candidate' ? `
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h3 class="text-lg font-bold mb-3">Mis Habilidades y Aptitudes Profesionales</h3>
+                        <p class="text-sm text-gray-600 mb-4">Selecciona de nuestra lista estandarizada para matchear con los empleadores.</p>
+                        
+                        <div class="space-y-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Habilidad / Aptitud</label>
+                                <select id="skill-name" class="w-full border rounded-lg px-3 py-2 mt-1 bg-white">
+                                    <optgroup label="Habilidades Técnicas">
+                                        ${techOptions}
+                                    </optgroup>
+                                    <optgroup label="Aptitudes (Soft Skills)">
+                                        ${softOptions}
+                                    </optgroup>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Años de Experiencia</label>
+                                <select id="skill-exp" class="w-full border rounded-lg px-3 py-2 mt-1 bg-white">
+                                    ${expOptions}
+                                </select>
+                            </div>
+                            <button onclick="addUserSkill()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">+ Agregar a mi Perfil</button>
+                        </div>
+                    </div>` : ''}
+                </div>
+            `;
+        }
+
+        async function handleUpdateProfile(e) {
+            e.preventDefault();
+            const name = document.getElementById('prof-name').value;
+            const location = document.getElementById('prof-location').value;
+
+            try {
+                const res = await fetch(`${API_URL}/profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${state.token}`
+                    },
+                    body: JSON.stringify({ name, location, profile_picture: tempProfilePicBase64 })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('name', data.user.name);
+                    localStorage.setItem('location', data.user.location);
+                    localStorage.setItem('profile_picture', data.user.profile_picture);
+                    state.name = data.user.name;
+                    state.location = data.user.location;
+                    state.profile_picture = data.user.profile_picture;
+                    alert('¡Perfil actualizado con éxito!');
+                    renderProfile(document.getElementById('main-content'));
+                    updateNav();
+                } else { alert(data.error); }
+            } catch (err) { console.error(err); }
+        }
+
+        async function addUserSkill() {
+            const skill_name = document.getElementById('skill-name').value;
+            const experience_years = document.getElementById('skill-exp').value;
+
+            try {
+                const res = await fetch(`${API_URL}/skills`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${state.token}`
+                    },
+                    body: JSON.stringify({ skill_name, experience_years: parseInt(experience_years) })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert('¡Habilidad/Aptitud guardada en tu perfil!');
+                } else { alert(data.error); }
+            } catch (err) { console.error(err); }
+        }
+
+        // ==================== EMPLEADOR: GESTIÓN Y EDICIÓN DE VACANTES ====================
         async function renderEmployerJobs(container) {
             container.innerHTML = `
                 <div class="flex justify-between items-center mb-6">
-                    <h2 class="text-2xl font-bold text-gray-800">Mis Publicaciones</h2>
+                    <h2 class="text-2xl font-bold text-gray-800">Mis Vacantes Publicadas</h2>
                     <button onclick="navigate('create-job')" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700">+ Nueva Vacante</button>
                 </div>
                 <div id="employer-jobs-list" class="space-y-4">
-                    <p class="text-gray-500 text-center py-8">Cargando tus vacantes...</p>
+                    <p class="text-gray-500 text-center py-8">Cargando vacantes...</p>
                 </div>
             `;
 
@@ -377,10 +492,10 @@
                     headers: { 'Authorization': `Bearer ${state.token}` }
                 });
                 const jobs = await res.json();
-
                 const listContainer = document.getElementById('employer-jobs-list');
+
                 if (!jobs || jobs.length === 0) {
-                    listContainer.innerHTML = `<p class="text-gray-500 text-center py-8 bg-white rounded-xl">Aún no has publicado vacantes.</p>`;
+                    listContainer.innerHTML = `<p class="text-gray-500 text-center py-8 bg-white rounded-xl">No has publicado vacantes aún.</p>`;
                     return;
                 }
 
@@ -393,44 +508,24 @@
                                 <p class="text-sm text-gray-600">Modalidad: <span class="capitalize font-medium">${job.modality}</span> • Ubicación: ${job.location || 'N/A'}</p>
                             </div>
                             <div class="flex gap-2">
-                                <button onclick="deleteJob(${job.id})" class="bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-red-200">
-                                    Eliminar
-                                </button>
+                                <button onclick="navigate('edit-job', ${job.id})" class="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-amber-200">Editar</button>
+                                <button onclick="deleteJob(${job.id})" class="bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-red-200">Eliminar</button>
                             </div>
                         </div>
                     `;
                 });
                 listContainer.innerHTML = html;
-            } catch (err) {
-                console.error(err);
-            }
+            } catch (err) { console.error(err); }
         }
 
-        async function deleteJob(jobId) {
-            if (!confirm('¿Deseas eliminar esta vacante?')) return;
-
-            try {
-                const res = await fetch(`${API_URL}/jobs/${jobId}`, {
-                    method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${state.token}` }
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    alert(data.message);
-                    renderEmployerJobs(document.getElementById('main-content'));
-                } else {
-                    alert(data.error);
-                }
-            } catch (err) {
-                console.error(err);
-            }
-        }
-
-        // ==================== CREAR VACANTE ====================
         function renderCreateJob(container) {
+            let techOptions = TECHNICAL_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+            let softOptions = SOFT_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+            let locationOptions = LOCATIONS_LIST.map(l => `<option value="${l}">${l}</option>`).join('');
+
             container.innerHTML = `
                 <div class="max-w-2xl mx-auto bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h2 class="text-xl font-bold mb-4">Publicar Nueva Vacante</h2>
+                    <h2 class="text-xl font-bold mb-4">Publicar Nueva Vacante con Smart Screening</h2>
                     <form onsubmit="handleCreateJob(event)" class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Título del Puesto</label>
@@ -446,8 +541,10 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Ubicación</label>
-                                <input type="text" id="job-location" placeholder="Ej: Santo Domingo, RD" class="w-full border rounded-lg px-3 py-2 mt-1">
+                                <label class="block text-sm font-medium text-gray-700">Ubicación / Sector</label>
+                                <select id="job-location" class="w-full border rounded-lg px-3 py-2 mt-1 bg-white">
+                                    ${locationOptions}
+                                </select>
                             </div>
                         </div>
                         <div>
@@ -457,6 +554,13 @@
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Descripción del Puesto</label>
                             <textarea id="job-desc" rows="4" required class="w-full border rounded-lg px-3 py-2 mt-1"></textarea>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-lg border">
+                            <label class="block text-sm font-semibold text-gray-800 mb-1">Requisito Obligatorio (Habilidad / Aptitud Clave)</label>
+                            <select id="req-skill" class="w-full border rounded-lg px-3 py-2 bg-white text-sm mb-2">
+                                <optgroup label="Técnicas">${techOptions}</optgroup>
+                                <optgroup label="Aptitudes">${softOptions}</optgroup>
+                            </select>
                         </div>
                         <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition">Publicar Vacante</button>
                     </form>
@@ -471,6 +575,9 @@
             const location = document.getElementById('job-location').value;
             const salary_range = document.getElementById('job-salary').value;
             const description = document.getElementById('job-desc').value;
+            const reqSkill = document.getElementById('req-skill').value;
+
+            const requirements = [{ skill_name: reqSkill, level_required: 1 }];
 
             try {
                 const res = await fetch(`${API_URL}/jobs`, {
@@ -479,71 +586,116 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${state.token}`
                     },
-                    body: JSON.stringify({ title, modality, location, salary_range, description })
+                    body: JSON.stringify({ title, modality, location, salary_range, description, requirements })
                 });
                 const data = await res.json();
-
                 if (res.ok) {
                     alert('¡Vacante publicada con éxito!');
                     navigate('my-jobs');
-                } else {
-                    alert(data.error);
+                } else { alert(data.error); }
+            } catch (err) { console.error(err); }
+        }
+
+        // ==================== EDITAR VACANTE ====================
+        async function renderEditJob(container, jobId) {
+            try {
+                const res = await fetch(`${API_URL}/employer/jobs`, {
+                    headers: { 'Authorization': `Bearer ${state.token}` }
+                });
+                const jobs = await res.json();
+                const job = jobs.find(j => j.id === jobId);
+
+                if (!job) {
+                    alert('Vacante no encontrada');
+                    navigate('my-jobs');
+                    return;
                 }
-            } catch (err) {
-                console.error(err);
-            }
-        }
 
-        // ==================== PERFIL DE CANDIDATO ====================
-        function renderCandidateProfile(container) {
-            let skillOptions = PREDEFINED_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+                let locationOptions = LOCATIONS_LIST.map(l => `<option value="${l}" ${job.location === l ? 'selected' : ''}>${l}</option>`).join('');
 
-            container.innerHTML = `
-                <div class="max-w-2xl mx-auto bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h2 class="text-xl font-bold mb-4">Mi Perfil Profesional</h2>
-                    
-                    <div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <h3 class="font-semibold mb-2">Añadir Habilidad Predefinida</h3>
-                        <div class="flex gap-2">
-                            <select id="skill-select" class="border rounded-lg px-3 py-2 bg-white flex-grow text-sm">
-                                ${skillOptions}
-                            </select>
-                            <input type="number" id="skill-level" min="1" max="5" value="3" title="Nivel del 1 al 5" class="w-16 border rounded-lg px-2 text-center text-sm">
-                            <button onclick="addSkill()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">Agregar</button>
-                        </div>
+                container.innerHTML = `
+                    <div class="max-w-2xl mx-auto bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h2 class="text-xl font-bold mb-4">Editar Vacante: ${job.title}</h2>
+                        <form onsubmit="handleEditJob(event, ${job.id})" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Título del Puesto</label>
+                                <input type="text" id="edit-title" value="${job.title}" required class="w-full border rounded-lg px-3 py-2 mt-1">
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Modalidad</label>
+                                    <select id="edit-modality" class="w-full border rounded-lg px-3 py-2 mt-1 bg-white">
+                                        <option value="presencial" ${job.modality === 'presencial' ? 'selected' : ''}>Presencial</option>
+                                        <option value="remoto" ${job.modality === 'remoto' ? 'selected' : ''}>Remoto</option>
+                                        <option value="hibrido" ${job.modality === 'hibrido' ? 'selected' : ''}>Híbrido</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Ubicación / Sector</label>
+                                    <select id="edit-location" class="w-full border rounded-lg px-3 py-2 mt-1 bg-white">
+                                        ${locationOptions}
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Rango Salarial</label>
+                                <input type="text" id="edit-salary" value="${job.salary_range || ''}" class="w-full border rounded-lg px-3 py-2 mt-1">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Descripción</label>
+                                <textarea id="edit-desc" rows="4" required class="w-full border rounded-lg px-3 py-2 mt-1">${job.description}</textarea>
+                            </div>
+                            <div class="flex gap-3">
+                                <button type="submit" class="flex-grow bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition">Guardar Cambios</button>
+                                <button type="button" onclick="navigate('my-jobs')" class="bg-gray-300 px-4 py-2 rounded-lg font-medium hover:bg-gray-400">Cancelar</button>
+                            </div>
+                        </form>
                     </div>
-                </div>
-            `;
+                `;
+            } catch (err) { console.error(err); }
         }
 
-        async function addSkill() {
-            const skill_name = document.getElementById('skill-select').value;
-            const level = document.getElementById('skill-level').value;
+        async function handleEditJob(e, jobId) {
+            e.preventDefault();
+            const title = document.getElementById('edit-title').value;
+            const modality = document.getElementById('edit-modality').value;
+            const location = document.getElementById('edit-location').value;
+            const salary_range = document.getElementById('edit-salary').value;
+            const description = document.getElementById('edit-desc').value;
 
             try {
-                const res = await fetch(`${API_URL}/skills`, {
-                    method: 'POST',
+                const res = await fetch(`${API_URL}/jobs/${jobId}`, {
+                    method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${state.token}`
                     },
-                    body: JSON.stringify({ skill_name, level: parseInt(level) })
+                    body: JSON.stringify({ title, modality, location, salary_range, description })
                 });
                 const data = await res.json();
-
                 if (res.ok) {
-                    alert('Habilidad agregada correctamente');
-                } else {
-                    alert(data.error);
-                }
-            } catch (err) {
-                console.error(err);
-            }
+                    alert('¡Vacante actualizada correctamente!');
+                    navigate('my-jobs');
+                } else { alert(data.error); }
+            } catch (err) { console.error(err); }
         }
 
-        document.addEventListener('DOMContentLoaded', () => {
-            render();
-        });
+        async function deleteJob(jobId) {
+            if (!confirm('¿Deseas eliminar esta vacante?')) return;
+            try {
+                const res = await fetch(`${API_URL}/jobs/${jobId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${state.token}` }
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(data.message);
+                    renderEmployerJobs(document.getElementById('main-content'));
+                } else { alert(data.error); }
+            } catch (err) { console.error(err); }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => { render(); });
     </script>
 </body>
 </html>
