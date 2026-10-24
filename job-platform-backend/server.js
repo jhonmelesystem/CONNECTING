@@ -30,18 +30,18 @@ function verifyToken(req, res, next) {
   });
 }
 
-// FUNCION DE MATCHING FLEXIBLE (Smart Screening)
+// FUNCIÓN DE MATCHING FLEXIBLE (Smart Screening Corregida)
 function checkSkillMatch(candidateSkills, requirementSkill) {
-  const reqClean = requirementSkill.toLowerCase().trim();
+  if (!requirementSkill) return 100;
   
-  // Si el requisito contiene comas (ej: "Bachiller, Informatica, Marketing Digital")
+  const reqClean = requirementSkill.toLowerCase().trim();
   const reqItems = reqClean.split(',').map(item => item.trim()).filter(Boolean);
 
   let matchedItems = 0;
 
+  const normalize = str => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+
   reqItems.forEach(reqSingle => {
-    // Normalizar texto quitando tildes y paréntesis
-    const normalize = str => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
     const reqNorm = normalize(reqSingle);
 
     const isMatched = candidateSkills.some(candSkill => {
@@ -52,7 +52,9 @@ function checkSkillMatch(candidateSkills, requirementSkill) {
              (reqNorm.includes('marketing') && candNorm.includes('marketing'));
     });
 
-    if (isMatched) matchedCount++;
+    if (isMatched) {
+      matchedItems++;
+    }
   });
 
   const totalReqs = reqItems.length > 0 ? reqItems.length : 1;
