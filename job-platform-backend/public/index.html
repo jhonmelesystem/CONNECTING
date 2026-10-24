@@ -279,7 +279,7 @@
                 const matchScore = eligibility ? eligibility.matchPercentage : 0;
                 const satisfiesMatch = matchScore >= 85;
 
-                let reqBadges = requirements.map(r => `
+                let reqBadges = (requirements || []).map(r => `
                     <span class="bg-blue-50 text-blue-800 border border-blue-200 text-xs px-2.5 py-1 rounded-full font-medium">
                         ⚡ ${r.skill_name}
                     </span>
@@ -348,4 +348,612 @@
             } catch (err) { console.error(err); }
         }
 
-        async
+        async function viewApplicants(jobId) {
+            const modal = document.getElementById('job-modal');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+            content.innerHTML = `<p class="text-center py-8 text-gray-500">Cargando candidatos postulados...</p>`;
+
+            try {
+                const res = await fetch(`${API_URL}/employer/jobs/${jobId}/applications`, {
+                    headers: { 'Authorization': `Bearer ${state.token}` }
+                });
+                const applicants = await res.json();
+
+                if (!applicants || applicants.length === 0) {
+                    content.innerHTML = `
+                        <div class="text-center py-8">
+                            <p class="text-gray-500 font-medium">Aún no hay candidatos postulados a esta vacante.</p>
+                        </div>
+                    `;
+                    return;
+                }
+
+                let applicantsHtml = applicants.map(c => {
+                    let skillsBadges = c.skills && c.skills.length > 0 
+                        ? c.skills.map(s => `<span class="bg-blue-50 text-blue-700 text-xs px-2 py-0.5 rounded border border-blue-200">⚡ ${s.skill_name}</span>`).join('')
+                        : '<span class="text-xs text-gray-400">Sin habilidades asociadas</span>';
+
+                    return `
+                        <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col gap-3">
+                            <div class="flex items-center gap-3">
+                                ${c.profile_picture ? `<img src="${c.profile_picture}" class="w-12 h-12 rounded-full object-cover border">` : '<div class="w-12 h-12 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-600">👤</div>'}
+                                <div>
+                                    <h4 class="font-bold text-gray-900">${c.name}</h4>
+                                    <p class="text-xs text-gray-500">📧 ${c.email} • 📍 ${c.location || 'N/A'}</p>
+                                    <p class="text-[10px] text-emerald-600 font-semibold mt-0.5">✅ Superó el filtro Smart Screening (85%+)</p>
+                                </div>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold text-gray-700 mb-1">Habilidades del Candidato:</p>
+                                <div class="flex flex-wrap gap-1">${skillsBadges}</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                content.innerHTML = `
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-800 mb-1">Candidatos Postulados (${applicants.length})</h2>
+                        <p class="text-xs text-gray-500 mb-4">Talentos que han cumplido con tus requisitos clave.</p>
+                        <div class="space-y-3 max-h-[60vh] overflow-y-auto pr-1">
+                            ${applicantsHtml}
+                        </div>
+                    </div>
+                `;
+            } catch (err) { console.error(err); }
+        }
+
+        function renderLogin(container) {
+            container.innerHTML = `
+                <div class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-sm border border-gray-100 mt-8">
+                    <h2 class="text-xl font-bold mb-4 text-center">Iniciar Sesión</h2>
+                    <form onsubmit="handleLogin(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Correo Electrónico</label>
+                            <input type="email" id="login-email" required class="w-full border rounded-lg px-3 py-2 mt-1">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Contraseña</label>
+                            <input type="password" id="login-password" required class="w-full border rounded-lg px-3 py-2 mt-1">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition">Ingresar</button>
+                    </form>
+                </div>
+            `;
+        }
+
+        async function handleLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            try {
+                const res = await fetch(`${API_URL}/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    localStorage.setItem('token', data.token);
+                    localStorage.setItem('role', data.role);
+                    localStorage.setItem('name', data.name);
+                    localStorage.setItem('location', data.location || '');
+                    localStorage.setItem('profile_picture', data.profile_picture || '');
+
+                    state.token = data.token;
+                    state.role = data.role;
+                    state.name = data.name;
+                    state.location = data.location || '';
+                    state.profile_picture = data.profile_picture || '';
+
+                    navigate('home');
+                } else { alert(data.error); }
+            } catch (err) { console.error(err); }
+        }
+
+        function renderRegister(container) {
+            tempProfilePicBase64 = '';
+            let locationOptions = LOCATIONS_LIST.map(l => `<option value="${l}">${l}</option>`).join('');
+
+            container.innerHTML = `
+                <div class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-sm border border-gray-100 mt-4">
+                    <h2 class="text-xl font-bold mb-4 text-center">Crear Cuenta</h2>
+                    <form onsubmit="handleRegister(event)" class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Nombre Completo / Empresa</label>
+                            <input type="text" id="reg-name" required class="w-full border rounded-lg px-3 py-1.5 mt-1">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Correo Electrónico</label>
+                            <input type="email" id="reg-email" required class="w-full border rounded-lg px-3 py-1.5 mt-1">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Contraseña</label>
+                            <input type="password" id="reg-password" required class="w-full border rounded-lg px-3 py-1.5 mt-1">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Tipo de Cuenta</label>
+                            <select id="reg-role" class="w-full border rounded-lg px-3 py-1.5 mt-1 bg-white">
+                                <option value="candidate">Busco Empleo (Candidato)</option>
+                                <option value="employer">Deseo Publicar Empleos (Empleador)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Ubicación / Sector</label>
+                            <select id="reg-location" class="w-full border rounded-lg px-3 py-1.5 mt-1 bg-white">
+                                ${locationOptions}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Foto de Perfil</label>
+                            <input type="file" accept="image/*" onchange="handleImageUpload(event)" class="w-full border rounded-lg px-3 py-1.5 mt-1 text-sm bg-white">
+                        </div>
+                        <button type="submit" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-medium hover:bg-emerald-700 transition">Registrarse</button>
+                    </form>
+                </div>
+            `;
+        }
+
+        async function handleRegister(e) {
+            e.preventDefault();
+            const name = document.getElementById('reg-name').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            const role = document.getElementById('reg-role').value;
+            const location = document.getElementById('reg-location').value;
+
+            try {
+                const res = await fetch(`${API_URL}/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name, email, password, role, location, profile_picture: tempProfilePicBase64 })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert('¡Registro exitoso! Inicia sesión.');
+                    navigate('login');
+                } else { alert(data.error); }
+            } catch (err) { console.error(err); }
+        }
+
+        async function renderProfile(container) {
+            tempProfilePicBase64 = state.profile_picture;
+            let locationOptions = LOCATIONS_LIST.map(l => `<option value="${l}" ${state.location === l ? 'selected' : ''}>${l}</option>`).join('');
+            
+            let academicOpt = ACADEMIC_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+            let coreOpt = CORE_CATEGORIES.map(s => `<option value="${s}">${s}</option>`).join('');
+            let otherOpt = OTHER_AREAS_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+            let softOpt = SOFT_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+            let expOptions = EXPERIENCE_LEVELS.map(e => `<option value="${e.value}">${e.label}</option>`).join('');
+
+            container.innerHTML = `
+                <div class="max-w-2xl mx-auto space-y-6">
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h2 class="text-xl font-bold mb-4">${state.name || 'Perfil de Usuario'}</h2>
+                        <form onsubmit="handleUpdateProfile(event)" class="space-y-4">
+                            <div class="flex items-center gap-4 mb-4">
+                                ${state.profile_picture ? `<img src="${state.profile_picture}" class="w-16 h-16 rounded-full object-cover border">` : '<div class="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center font-bold text-xl">👤</div>'}
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Cambiar Foto de Perfil</label>
+                                    <input type="file" accept="image/*" onchange="handleImageUpload(event)" class="text-sm mt-1">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Nombre / Empresa</label>
+                                <input type="text" id="prof-name" value="${state.name || ''}" required class="w-full border rounded-lg px-3 py-2 mt-1">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Ubicación / Sector</label>
+                                <select id="prof-location" class="w-full border rounded-lg px-3 py-2 mt-1 bg-white">
+                                    ${locationOptions}
+                                </select>
+                            </div>
+                            <button type="submit" class="bg-blue-600 text-white px-5 py-2 rounded-lg font-medium hover:bg-blue-700 transition">Guardar Cambios</button>
+                        </form>
+                    </div>
+
+                    ${state.role === 'candidate' ? `
+                    <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h3 class="text-lg font-bold mb-2">Mis Habilidades & Conocimientos</h3>
+                        <p class="text-xs text-gray-500 mb-4">Agrega tus conocimientos para habilitar el Smart Screening al 85%+.</p>
+                        
+                        <div class="space-y-3 mb-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Seleccionar Habilidad / Área</label>
+                                <select id="skill-name" class="w-full border rounded-lg px-3 py-2 mt-1 bg-white text-sm">
+                                    <optgroup label="Nivel Académico">${academicOpt}</optgroup>
+                                    <optgroup label="Informática & Marketing Digital">${coreOpt}</optgroup>
+                                    <optgroup label="Otras Áreas Laborales">${otherOpt}</optgroup>
+                                    <optgroup label="Aptitudes Personales">${softOpt}</optgroup>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Experiencia</label>
+                                <select id="skill-exp" class="w-full border rounded-lg px-3 py-2 mt-1 bg-white text-sm">
+                                    ${expOptions}
+                                </select>
+                            </div>
+                            <button onclick="addUserSkill()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition">+ Agregar Habilidad</button>
+                        </div>
+
+                        <div>
+                            <h4 class="text-sm font-semibold text-gray-700 mb-2">Habilidades Registradas:</h4>
+                            <div id="user-skills-badges" class="flex flex-wrap gap-2">
+                                <p class="text-xs text-gray-400">Cargando habilidades...</p>
+                            </div>
+                        </div>
+                    </div>` : ''}
+                </div>
+            `;
+
+            if (state.role === 'candidate') { loadUserSkills(); }
+        }
+
+        async function loadUserSkills() {
+            const badgesContainer = document.getElementById('user-skills-badges');
+            if (!badgesContainer) return;
+
+            try {
+                const res = await fetch(`${API_URL}/skills`, {
+                    headers: { 'Authorization': `Bearer ${state.token}` }
+                });
+                const skills = await res.json();
+
+                if (!skills || skills.length === 0) {
+                    badgesContainer.innerHTML = `<span class="text-xs text-gray-500 italic">No has agregado habilidades aún.</span>`;
+                    return;
+                }
+
+                badgesContainer.innerHTML = skills.map(s => `
+                    <span class="bg-blue-50 text-blue-700 border border-blue-200 text-xs px-3 py-1 rounded-full font-medium flex items-center gap-2">
+                        ⚡ ${s.skill_name}
+                        <button onclick="removeSkill(${s.id})" class="text-red-500 hover:text-red-700 font-bold ml-1" title="Eliminar">✕</button>
+                    </span>
+                `).join('');
+            } catch (err) { console.error(err); }
+        }
+
+        async function removeSkill(skillId) {
+            try {
+                const res = await fetch(`${API_URL}/skills/${skillId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${state.token}` }
+                });
+                if (res.ok) { loadUserSkills(); }
+            } catch (err) { console.error(err); }
+        }
+
+        async function addUserSkill() {
+            const skill_name = document.getElementById('skill-name').value;
+            const experience_years = document.getElementById('skill-exp').value;
+
+            try {
+                const res = await fetch(`${API_URL}/skills`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${state.token}`
+                    },
+                    body: JSON.stringify({ skill_name, experience_years: parseInt(experience_years) })
+                });
+                const data = await res.json();
+                if (res.ok) { loadUserSkills(); } else { alert(data.error); }
+            } catch (err) { console.error(err); }
+        }
+
+        async function handleUpdateProfile(e) {
+            e.preventDefault();
+            const name = document.getElementById('prof-name').value;
+            const location = document.getElementById('prof-location').value;
+
+            try {
+                const res = await fetch(`${API_URL}/profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${state.token}`
+                    },
+                    body: JSON.stringify({ name, location, profile_picture: tempProfilePicBase64 })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('name', data.user.name);
+                    localStorage.setItem('location', data.user.location);
+                    localStorage.setItem('profile_picture', data.user.profile_picture);
+                    state.name = data.user.name;
+                    state.location = data.user.location;
+                    state.profile_picture = data.user.profile_picture;
+                    alert('¡Perfil actualizado con éxito!');
+                    renderProfile(document.getElementById('main-content'));
+                    updateNav();
+                } else { alert(data.error); }
+            } catch (err) { console.error(err); }
+        }
+
+        async function renderEmployerJobs(container) {
+            container.innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Mis Vacantes Publicadas</h2>
+                    <button onclick="navigate('create-job')" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700">+ Nueva Vacante</button>
+                </div>
+                <div id="employer-jobs-list" class="space-y-4">
+                    <p class="text-gray-500 text-center py-8">Cargando vacantes...</p>
+                </div>
+            `;
+
+            try {
+                const res = await fetch(`${API_URL}/employer/jobs`, {
+                    headers: { 'Authorization': `Bearer ${state.token}` }
+                });
+                const jobs = await res.json();
+                const listContainer = document.getElementById('employer-jobs-list');
+
+                if (!jobs || jobs.length === 0) {
+                    listContainer.innerHTML = `<p class="text-gray-500 text-center py-8 bg-white rounded-xl">No has publicado vacantes aún.</p>`;
+                    return;
+                }
+
+                let html = '';
+                jobs.forEach(job => {
+                    html += `
+                        <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-900">${job.title}</h3>
+                                <p class="text-sm text-gray-600">Modalidad: <span class="capitalize font-medium">${job.modality}</span> • Ubicación: ${job.location || 'N/A'}</p>
+                            </div>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="viewApplicants(${job.id})" class="bg-emerald-100 text-emerald-700 px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-emerald-200">Ver Candidatos</button>
+                                <button onclick="navigate('edit-job', ${job.id})" class="bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-amber-200">Editar</button>
+                                <button onclick="deleteJob(${job.id})" class="bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-red-200">Eliminar</button>
+                            </div>
+                        </div>
+                    `;
+                });
+                listContainer.innerHTML = html;
+            } catch (err) { console.error(err); }
+        }
+
+        function renderCreateJob(container) {
+            selectedJobRequirements = [];
+            let academicOpt = ACADEMIC_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+            let coreOpt = CORE_CATEGORIES.map(s => `<option value="${s}">${s}</option>`).join('');
+            let otherOpt = OTHER_AREAS_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+            let softOpt = SOFT_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+            let locationOptions = LOCATIONS_LIST.map(l => `<option value="${l}">${l}</option>`).join('');
+
+            container.innerHTML = `
+                <div class="max-w-2xl mx-auto bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h2 class="text-xl font-bold mb-4">Publicar Vacante con Smart Screening</h2>
+                    <form onsubmit="handleCreateJob(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Título del Puesto</label>
+                            <input type="text" id="job-title" placeholder="Ej: Especialista en Ventas y Marketing Digital" required class="w-full border rounded-lg px-3 py-2 mt-1">
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Modalidad</label>
+                                <select id="job-modality" class="w-full border rounded-lg px-3 py-2 mt-1 bg-white">
+                                    <option value="presencial">Presencial</option>
+                                    <option value="remoto">Remoto</option>
+                                    <option value="hibrido">Híbrido</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Ubicación / Sector</label>
+                                <select id="job-location" class="w-full border rounded-lg px-3 py-2 mt-1 bg-white">
+                                    ${locationOptions}
+                                </select>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Rango Salarial</label>
+                            <input type="text" id="job-salary" placeholder="Ej: $40,000 - $60,000 DOP" class="w-full border rounded-lg px-3 py-2 mt-1">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Descripción del Puesto</label>
+                            <textarea id="job-desc" rows="4" required class="w-full border rounded-lg px-3 py-2 mt-1"></textarea>
+                        </div>
+                        
+                        <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            <label class="block text-sm font-semibold text-gray-800 mb-2">Añadir Requisitos de Habilidades/Estudios Exigidos</label>
+                            <div class="flex gap-2 mb-3">
+                                <select id="req-skill-select" class="w-full border rounded-lg px-3 py-2 bg-white text-sm">
+                                    <optgroup label="Nivel Académico">${academicOpt}</optgroup>
+                                    <optgroup label="Informática & Marketing Digital">${coreOpt}</optgroup>
+                                    <optgroup label="Otras Áreas Laborales">${otherOpt}</optgroup>
+                                    <optgroup label="Aptitudes Personales">${softOpt}</optgroup>
+                                </select>
+                                <button type="button" onclick="addRequirementToJob()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">Añadir</button>
+                            </div>
+                            <div id="job-reqs-badges" class="flex flex-wrap gap-2">
+                                <span class="text-xs text-gray-400 italic">No has añadido requisitos obligatorios.</span>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition">Publicar Vacante</button>
+                    </form>
+                </div>
+            `;
+        }
+
+        function addRequirementToJob() {
+            const select = document.getElementById('req-skill-select');
+            const val = select.value;
+            if (val && !selectedJobRequirements.includes(val)) {
+                selectedJobRequirements.push(val);
+                renderJobReqBadges();
+            }
+        }
+
+        function removeRequirementFromJob(skill) {
+            selectedJobRequirements = selectedJobRequirements.filter(s => s !== skill);
+            renderJobReqBadges();
+        }
+
+        function renderJobReqBadges() {
+            const container = document.getElementById('job-reqs-badges');
+            if (!container) return;
+
+            if (selectedJobRequirements.length === 0) {
+                container.innerHTML = `<span class="text-xs text-gray-400 italic">No has añadido requisitos obligatorios.</span>`;
+                return;
+            }
+
+            container.innerHTML = selectedJobRequirements.map(s => `
+                <span class="bg-blue-100 text-blue-800 text-xs px-3 py-1 rounded-full font-medium flex items-center gap-1">
+                    ⚡ ${s}
+                    <button type="button" onclick="removeRequirementFromJob('${s}')" class="text-red-500 font-bold ml-1">✕</button>
+                </span>
+            `).join('');
+        }
+
+        async function handleCreateJob(e) {
+            e.preventDefault();
+            const title = document.getElementById('job-title').value;
+            const modality = document.getElementById('job-modality').value;
+            const location = document.getElementById('job-location').value;
+            const salary_range = document.getElementById('job-salary').value;
+            const description = document.getElementById('job-desc').value;
+
+            try {
+                const res = await fetch(`${API_URL}/jobs`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${state.token}`
+                    },
+                    body: JSON.stringify({ title, modality, location, salary_range, description, requirements: selectedJobRequirements })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert('¡Vacante publicada con éxito!');
+                    navigate('my-jobs');
+                } else { alert(data.error); }
+            } catch (err) { console.error(err); }
+        }
+
+        async function renderEditJob(container, jobId) {
+            try {
+                const res = await fetch(`${API_URL}/jobs/${jobId}`, {
+                    headers: { 'Authorization': `Bearer ${state.token}` }
+                });
+                const data = await res.json();
+                const job = data.job;
+                const existingReqs = data.requirements || [];
+
+                selectedJobRequirements = existingReqs.map(r => r.skill_name);
+
+                let academicOpt = ACADEMIC_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+                let coreOpt = CORE_CATEGORIES.map(s => `<option value="${s}">${s}</option>`).join('');
+                let otherOpt = OTHER_AREAS_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+                let softOpt = SOFT_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+                let locationOptions = LOCATIONS_LIST.map(l => `<option value="${l}" ${job.location === l ? 'selected' : ''}>${l}</option>`).join('');
+
+                container.innerHTML = `
+                    <div class="max-w-2xl mx-auto bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                        <h2 class="text-xl font-bold mb-4">Editar Vacante: ${job.title}</h2>
+                        <form onsubmit="handleEditJob(event, ${job.id})" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Título del Puesto</label>
+                                <input type="text" id="edit-title" value="${job.title}" required class="w-full border rounded-lg px-3 py-2 mt-1">
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Modalidad</label>
+                                    <select id="edit-modality" class="w-full border rounded-lg px-3 py-2 mt-1 bg-white">
+                                        <option value="presencial" ${job.modality === 'presencial' ? 'selected' : ''}>Presencial</option>
+                                        <option value="remoto" ${job.modality === 'remoto' ? 'selected' : ''}>Remoto</option>
+                                        <option value="hibrido" ${job.modality === 'hibrido' ? 'selected' : ''}>Híbrido</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700">Ubicación / Sector</label>
+                                    <select id="edit-location" class="w-full border rounded-lg px-3 py-2 mt-1 bg-white">
+                                        ${locationOptions}
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Rango Salarial</label>
+                                <input type="text" id="edit-salary" value="${job.salary_range || ''}" class="w-full border rounded-lg px-3 py-2 mt-1">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Descripción</label>
+                                <textarea id="edit-desc" rows="4" required class="w-full border rounded-lg px-3 py-2 mt-1">${job.description}</textarea>
+                            </div>
+
+                            <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                                <label class="block text-sm font-semibold text-gray-800 mb-2">Habilidades Requeridas Exigidas</label>
+                                <div class="flex gap-2 mb-3">
+                                    <select id="req-skill-select" class="w-full border rounded-lg px-3 py-2 bg-white text-sm">
+                                        <optgroup label="Nivel Académico">${academicOpt}</optgroup>
+                                        <optgroup label="Informática & Marketing Digital">${coreOpt}</optgroup>
+                                        <optgroup label="Otras Áreas Laborales">${otherOpt}</optgroup>
+                                        <optgroup label="Aptitudes Personales">${softOpt}</optgroup>
+                                    </select>
+                                    <button type="button" onclick="addRequirementToJob()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">Añadir</button>
+                                </div>
+                                <div id="job-reqs-badges" class="flex flex-wrap gap-2"></div>
+                            </div>
+
+                            <div class="flex gap-3">
+                                <button type="submit" class="flex-grow bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition">Guardar Cambios</button>
+                                <button type="button" onclick="navigate('my-jobs')" class="bg-gray-300 px-4 py-2 rounded-lg font-medium hover:bg-gray-400">Cancelar</button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+                renderJobReqBadges();
+            } catch (err) { console.error(err); }
+        }
+
+        async function handleEditJob(e, jobId) {
+            e.preventDefault();
+            const title = document.getElementById('edit-title').value;
+            const modality = document.getElementById('edit-modality').value;
+            const location = document.getElementById('edit-location').value;
+            const salary_range = document.getElementById('edit-salary').value;
+            const description = document.getElementById('edit-desc').value;
+
+            try {
+                const res = await fetch(`${API_URL}/jobs/${jobId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${state.token}`
+                    },
+                    body: JSON.stringify({ title, modality, location, salary_range, description, requirements: selectedJobRequirements })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert('¡Vacante actualizada correctamente!');
+                    navigate('my-jobs');
+                } else { alert(data.error); }
+            } catch (err) { console.error(err); }
+        }
+
+        async function deleteJob(jobId) {
+            if (!confirm('¿Deseas eliminar esta vacante?')) return;
+            try {
+                const res = await fetch(`${API_URL}/jobs/${jobId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${state.token}` }
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(data.message);
+                    renderEmployerJobs(document.getElementById('main-content'));
+                } else { alert(data.error); }
+            } catch (err) { console.error(err); }
+        }
+
+        // INICIALIZAR RENDERIZADO AUTOMÁTICO
+        document.addEventListener('DOMContentLoaded', () => { 
+            render(); 
+        });
+    </script>
+</body>
+</html>
