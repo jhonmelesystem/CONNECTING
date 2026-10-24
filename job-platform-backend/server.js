@@ -11,32 +11,19 @@ const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(cors());
 
-// Servir estáticos desde la carpeta public
-const publicPath = path.join(__dirname, 'public');
-app.use(express.static(publicPath));
+// Servir archivos estáticos desde la carpeta 'public'
+app.use(express.static(path.join(__dirname, 'public')));
 
 const JWT_SECRET = process.env.JWT_SECRET || 'connecting_secreto_super_seguro';
 
-// Ruta principal con manejo de errores directo
+// Ruta principal para servir la interfaz web
 app.get('/', (req, res) => {
-  const indexPath = path.join(__dirname, 'public', 'index.html');
-  res.sendFile(indexPath, (err) => {
-    if (err) {
-      console.error("❌ Error al servir index.html:", err);
-      res.status(500).send(`
-        <h2>🚨 Error al cargar el frontend de CONNECTING</h2>
-        <p>Servidor activo en Railway, pero no se encontró el archivo HTML en: <code>${indexPath}</code></p>
-        <p>Asegúrate de que en tu proyecto de GitHub exista la carpeta <strong>public</strong> y dentro de ella esté el archivo <strong>index.html</strong>.</p>
-      `);
-    }
-  });
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: '🚀 Servidor API de CONNECTING activo y funcionando.' });
 });
-
-// ... (Resto de tus rutas de API: register, login, profile, skills, jobs, etc.)
 
 function verifyToken(req, res, next) {
   const authHeader = req.headers['authorization'];
@@ -179,15 +166,21 @@ app.delete('/api/skills/:id', verifyToken, async (req, res) => {
 
 // ==================== VACANTES & APLICACIONES ====================
 
+// OBTENER TODAS LAS VACANTES (FEED PRINCIPAL)
 app.get('/api/jobs', async (req, res) => {
   try {
     const { search, modality } = req.query;
-    let query = `SELECT j.*, u.name as employer_name, u.profile_picture as employer_logo, u.location as employer_location FROM jobs j JOIN users u ON j.employer_id = u.id WHERE 1=1`;
+    let query = `
+      SELECT j.*, u.name as employer_name, u.profile_picture as employer_logo, u.location as employer_location 
+      FROM jobs j 
+      JOIN users u ON j.employer_id = u.id 
+      WHERE 1=1
+    `;
     let queryParams = [];
 
-    if (search) {
+    if (search && search.trim() !== '') {
       query += ` AND (j.title LIKE ? OR j.description LIKE ? OR j.location LIKE ?)`;
-      queryParams.push(`%${search}%`, `%${search}\%`, `\%${search}%`);
+      queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     if (modality && modality !== 'all') {
@@ -200,6 +193,7 @@ app.get('/api/jobs', async (req, res) => {
     const [jobs] = await db.query(query, queryParams);
     res.json(jobs);
   } catch (err) {
+    console.error("❌ Error en GET /api/jobs:", err);
     res.status(500).json({ error: err.message });
   }
 });
@@ -226,16 +220,216 @@ app.get('/api/employer/jobs/:id/applications', verifyToken, async (req, res) => 
       SELECT a.id as application_id, a.applied_at, u.id as candidate_id, u.name, u.email, u.location, u.profile_picture
       FROM applications a
       JOIN users u ON a.candidate_id = u.id
-      WHERE a.job_id = ?`, [jobId]);
+      WHERE a.job_id = ?
+      ORDER BY a.applied_at DESC
+    `, [jobId]);
+
+    for (let candidate of applicants) {
+      const [skills] = await db.query(`SELECT skill_name, level FROM user_skills WHERE user_id = ?`, [candidate.candidate_id]);
+      candidate.skills = skills;
+    }
+
     res.json(applicants);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ESCUCHA DEL PUERTO PARA RAILWAY
-const PORT = process.env.PORT || 4000;
+// PUBLICAR NUEVA VACANTE (CORREGIDO Y ROBUSTO)
+app.post('/api/jobs', verifyToken, async (req, res) => {
+  if (req.user.role !== 'employer') return res.status(403).json({ error: 'Solo empleadores pueden publicar vacantes' });
+  const { title, description, location, salary_range, modality, requirements } = req.body;
 
+  if (!title || !description) {
+    return res.status(400).json({ error: 'El título y la descripción son obligatorios.' });
+  }
+
+  try {
+    const [result] = await db.query(
+      `INSERT INTO jobs (employer_id, title, description, location, salary_range, modality) VALUES (?, ?, ?, ?, ?, ?)`,
+      [req.user.id, title, description, location || '', salary_range || '', modality || 'presencial']
+    );
+    const jobId = result.insertId;
+
+    if (requirements && Array.isArray(requirements) && requirements.length > 0) {
+      for (let reqItem of requirements) {
+        const skillName = typeof reqItem === 'string' ? reqItem : (reqItem.skill_name || 'General');
+        await db.query(
+          `INSERT INTO job_requirements (job_id, skill_name, level_required, is_mandatory) VALUES (?, ?, ?, 1)`,
+          [jobId, skillName, 1]
+        );
+      }
+    }
+
+    res.json({ message: 'Vacante publicada con éxito en el feed', jobId });
+  } catch (err) {
+    console.error("❌ Error al publicar vacante:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.put('/api/jobs/:id', verifyToken, async (req, res) => {
+  if (req.user.role !== 'employer') return res.status(403).json({ error: 'Solo empleadores' });
+  const jobId = req.params.id;
+  const { title, description, location, salary_range, modality, requirements } = req.body;
+
+  try {
+    const [result] = await db.query(
+      `UPDATE jobs SET title = ?, description = ?, location = ?, salary_range = ?, modality = ? WHERE id = ? AND employer_id = ?`,
+      [title, description, location, salary_range, modality, jobId, req.user.id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Vacante no encontrada o sin permisos.' });
+    }
+
+    if (requirements && Array.isArray(requirements)) {
+      await db.query(`DELETE FROM job_requirements WHERE job_id = ?`, [jobId]);
+      for (let reqItem of requirements) {
+        const skillName = typeof reqItem === 'string' ? reqItem : (reqItem.skill_name || 'General');
+        await db.query(
+          `INSERT INTO job_requirements (job_id, skill_name, level_required, is_mandatory) VALUES (?, ?, ?, 1)`,
+          [jobId, skillName, 1]
+        );
+      }
+    }
+
+    res.json({ message: 'Vacante actualizada correctamente' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.delete('/api/jobs/:id', verifyToken, async (req, res) => {
+  if (req.user.role !== 'employer') return res.status(403).json({ error: 'Solo empleadores' });
+  const jobId = req.params.id;
+
+  try {
+    await db.query(`DELETE FROM job_requirements WHERE job_id = ?`, [jobId]);
+    await db.query(`DELETE FROM applications WHERE job_id = ?`, [jobId]);
+    await db.query(`DELETE FROM jobs WHERE id = ? AND employer_id = ?`, [jobId, req.user.id]);
+    res.json({ message: 'Vacante eliminada con éxito' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// OBTENER DETALLE DE VACANTE Y SMART SCREENING
+app.get('/api/jobs/:id', async (req, res) => {
+  const jobId = parseInt(req.params.id, 10);
+
+  if (isNaN(jobId)) {
+    return res.status(400).json({ error: 'ID de vacante inválido' });
+  }
+
+  let candidateId = null;
+  const authHeader = req.headers['authorization'];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    const token = authHeader.split(' ')[1];
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      candidateId = decoded.id;
+    } catch (e) {
+      candidateId = null;
+    }
+  }
+
+  try {
+    const [jobs] = await db.query(
+      `SELECT j.*, u.name as employer_name, u.profile_picture as employer_logo 
+       FROM jobs j 
+       LEFT JOIN users u ON j.employer_id = u.id 
+       WHERE j.id = ?`,
+      [jobId]
+    );
+
+    if (!jobs || jobs.length === 0) {
+      return res.status(404).json({ error: 'Vacante no encontrada' });
+    }
+
+    const job = jobs[0];
+    let requirements = [];
+    try {
+      const [reqRows] = await db.query(`SELECT * FROM job_requirements WHERE job_id = ?`, [jobId]);
+      requirements = reqRows || [];
+    } catch (reqErr) {
+      console.warn("Advertencia al consultar job_requirements:", reqErr.message);
+    }
+
+    let eligibility = { canApply: false, matchPercentage: 0 };
+
+    if (candidateId) {
+      let candidateSkills = [];
+      try {
+        const [skillsRows] = await db.query(`SELECT * FROM user_skills WHERE user_id = ?`, [candidateId]);
+        candidateSkills = skillsRows || [];
+      } catch (skillErr) {
+        console.warn("Advertencia al consultar user_skills:", skillErr.message);
+      }
+
+      if (requirements.length > 0) {
+        let totalScore = 0;
+        requirements.forEach(reqItem => {
+          totalScore += checkSkillMatch(candidateSkills, reqItem.skill_name);
+        });
+
+        const matchPercentage = Math.min(100, Math.round(totalScore / requirements.length));
+        const canApply = matchPercentage >= 85;
+
+        eligibility = { canApply, matchPercentage };
+      } else {
+        eligibility = { canApply: true, matchPercentage: 100 };
+      }
+    }
+
+    res.json({ job, requirements, eligibility });
+  } catch (err) {
+    console.error("❌ Error en GET /api/jobs/:id:", err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/jobs/:id/apply', verifyToken, async (req, res) => {
+  if (req.user.role !== 'candidate') return res.status(403).json({ error: 'Solo candidatos' });
+  const jobId = parseInt(req.params.id, 10);
+  const candidateId = req.user.id;
+
+  if (isNaN(jobId)) {
+    return res.status(400).json({ error: 'ID de vacante inválido' });
+  }
+
+  try {
+    const [requirements] = await db.query(`SELECT * FROM job_requirements WHERE job_id = ?`, [jobId]);
+    const [candidateSkills] = await db.query(`SELECT * FROM user_skills WHERE user_id = ?`, [candidateId]);
+
+    if (requirements.length > 0) {
+      let totalScore = 0;
+      requirements.forEach(reqItem => {
+        totalScore += checkSkillMatch(candidateSkills, reqItem.skill_name);
+      });
+      const matchPercentage = Math.min(100, Math.round(totalScore / requirements.length));
+
+      if (matchPercentage < 85) {
+        return res.status(400).json({ error: 'No alcanzas el 85% de compatibilidad requerido para esta vacante.' });
+      }
+    }
+
+    await db.query(
+      `INSERT INTO applications (job_id, candidate_id, status) VALUES (?, ?, 'pending')`,
+      [jobId, candidateId]
+    );
+
+    res.json({ message: '¡Postulación realizada con éxito!' });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({ error: 'Ya te has postulado a esta vacante.' });
+    }
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ESCUCHA DEL PUERTO
+const PORT = process.env.PORT || 4000;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Servidor CONNECTING corriendo correctamente en el puerto ${PORT}`);
 });
