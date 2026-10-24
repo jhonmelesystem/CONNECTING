@@ -27,7 +27,7 @@
     <!-- CONTENEDOR PRINCIPAL -->
     <main id="main-content" class="max-w-6xl mx-auto px-4 py-8 flex-grow w-full"></main>
 
-    <!-- MODAL DE DETALLES Y SMART SCREENING -->
+    <!-- MODAL SMART SCREENING -->
     <div id="job-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-xl relative">
             <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl font-bold">✕</button>
@@ -54,26 +54,49 @@
 
         let tempProfilePicBase64 = '';
 
-        const TECHNICAL_SKILLS = [
-            'JavaScript', 'TypeScript', 'Node.js', 'Express', 'MySQL', 'PostgreSQL', 
-            'React', 'Vue.js', 'Angular', 'HTML / CSS', 'Tailwind CSS', 'Python', 
-            'Django', 'PHP', 'Laravel', 'Java', 'Spring Boot', 'Flutter', 'React Native',
-            'Docker', 'Git / GitHub', 'AWS Cloud', 'Sistemas Operativos', 'Excel Avanzado',
-            'Administración de Servidores', 'Soporte Técnico IT', 'Redes y Conectividad'
+        // CATÁLOGO UNIFICADO Y EXPANDIDO DE TODAS LAS ÁREAS (INCLUYE BACHILLER, INFORMÁTICA Y MARKETING DIGITAL)
+        const ACADEMIC_SKILLS = [
+            'Bachiller (Educación Secundaria Completa)',
+            'Técnico Superior / Tecnólogo',
+            'Estudiante Universitario',
+            'Grado / Licenciatura Profesional',
+            'Postgrado / Maestría / Diplomado'
+        ];
+
+        const CORE_CATEGORIES = [
+            'Informática (Desarrollo Web & Software)',
+            'Informática (Soporte Técnico & Redes)',
+            'Informática (Bases de Datos & MySQL)',
+            'Marketing Digital (Gestión de Redes & SEO)',
+            'Marketing Digital (Publicidad & Campañas Meta/Google)',
+            'Marketing Digital (Creación de Contenido & Copywriting)'
+        ];
+
+        const OTHER_AREAS_SKILLS = [
+            'Atención al Cliente & Telemercadeo',
+            'Ventas & Comercial',
+            'Contabilidad & Finanzas',
+            'Recursos Humanos & Gestión de Personal',
+            'Diseño Gráfico & Multimedia',
+            'Gestión de Proyectos & Planificación',
+            'Logística, Inventario & Almacén',
+            'Administración & Recepción',
+            'Mantenimiento Técnico & Electromecánica',
+            'Conducción, Entrega & Mensajería',
+            'Idiomas: Inglés Avanzado / Bilingüe'
         ];
 
         const SOFT_SKILLS = [
             'Liderazgo', 'Trabajo en Equipo', 'Comunicación Efectiva', 'Resolución de Problemas',
             'Pensamiento Crítico', 'Gestión del Tiempo', 'Adaptabilidad al Cambio', 'Negociación',
-            'Orientación a Resultados', 'Atención al Cliente', 'Empatía y Colaboración', 'Inteligencia Emocional'
+            'Orientación a Resultados', 'Empatía y Colaboración', 'Inteligencia Emocional'
         ];
 
         const EXPERIENCE_LEVELS = [
-            { value: 1, label: 'Menos de 1 año (Junior / Principiante)' },
+            { value: 1, label: 'Sin Experiencia / Principiante' },
             { value: 2, label: '1 a 2 años de experiencia' },
-            { value: 3, label: '3 a 5 años de experiencia (Semi-Senior)' },
-            { value: 4, label: '5 a 8 años de experiencia (Senior)' },
-            { value: 5, label: 'Más de 8 años (Especialista)' }
+            { value: 3, label: '3 a 5 años de experiencia' },
+            { value: 4, label: 'Más de 5 años (Senior / Experto)' }
         ];
 
         const LOCATIONS_LIST = [
@@ -155,7 +178,7 @@
             container.innerHTML = `
                 <div class="bg-white p-4 rounded-xl shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-center justify-between border border-gray-100">
                     <div class="w-full md:w-1/2 relative">
-                        <input type="text" id="searchInput" placeholder="Buscar por puesto, habilidad o sector..." 
+                        <input type="text" id="searchInput" placeholder="Buscar por puesto, habilidad, Bachiller, Informática..." 
                             class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                         <span class="absolute left-3 top-2.5 text-gray-400">🔍</span>
                     </div>
@@ -174,7 +197,7 @@
 
                 <div class="mb-6">
                     <h2 class="text-2xl font-bold text-gray-800">Empleos Disponibles</h2>
-                    <p class="text-sm text-gray-600">Postulaciones evaluadas con compatibilidad Smart Screening.</p>
+                    <p class="text-sm text-gray-600">Smart Screening integrado para postulaciones exactas.</p>
                 </div>
 
                 <div id="jobs-list" class="space-y-4">
@@ -206,8 +229,8 @@
                         html += `
                             <div class="ad-container p-4 rounded-xl shadow-sm mb-4 text-center">
                                 <span class="text-[10px] bg-gray-500 text-white px-2 py-0.5 rounded font-bold uppercase">Patrocinado</span>
-                                <p class="text-sm font-semibold text-gray-800 mt-1">🚀 ¡Acelera tu carrera con tecnología de vanguardia!</p>
-                                <a href="#" class="text-xs text-blue-600 underline font-medium">Conoce nuestras ofertas exclusivas</a>
+                                <p class="text-sm font-semibold text-gray-800 mt-1">🚀 ¡Acelera tu carrera profesional con los mejores equipos en Cinets!</p>
+                                <a href="#" class="text-xs text-blue-600 underline font-medium">Ver accesorios y tecnología</a>
                             </div>
                         `;
                     }
@@ -242,7 +265,7 @@
             } catch (error) { console.error(error); }
         }
 
-        // ==================== MODAL DE DETALLE Y SMART SCREENING ====================
+        // ==================== MODAL SMART SCREENING ====================
         async function openJobDetail(jobId) {
             const modal = document.getElementById('job-modal');
             const content = document.getElementById('modal-content');
@@ -259,7 +282,7 @@
                 const satisfiesMatch = matchScore >= 85;
 
                 let reqBadges = requirements.map(r => `
-                    <span class="bg-gray-100 text-gray-800 text-xs px-2.5 py-1 rounded-full font-medium">
+                    <span class="bg-blue-50 text-blue-800 border border-blue-200 text-xs px-2.5 py-1 rounded-full font-medium">
                         ⚡ ${r.skill_name}
                     </span>
                 `).join('');
@@ -273,21 +296,21 @@
                         </div>
 
                         <div>
-                            <h4 class="font-semibold text-sm text-gray-700">Descripción:</h4>
+                            <h4 class="font-semibold text-sm text-gray-700">Descripción de la Vacante:</h4>
                             <p class="text-sm text-gray-600 mt-1">${job.description}</p>
                         </div>
 
                         <div>
-                            <h4 class="font-semibold text-sm text-gray-700 mb-2">Habilidades Requeridas:</h4>
+                            <h4 class="font-semibold text-sm text-gray-700 mb-2">Requisitos Clave Exigidos:</h4>
                             <div class="flex flex-wrap gap-2">${reqBadges || '<span class="text-xs text-gray-400">Sin requisitos específicos</span>'}</div>
                         </div>
 
                         ${state.token && state.role === 'candidate' ? `
                             <div class="p-4 rounded-xl ${satisfiesMatch ? 'bg-emerald-50 border border-emerald-200' : 'bg-amber-50 border border-amber-200'}">
                                 <div class="flex justify-between items-center mb-1">
-                                    <span class="text-sm font-bold ${satisfiesMatch ? 'text-emerald-800' : 'text-amber-800'}">Compatibilidad de Perfil: ${matchScore}%</span>
+                                    <span class="text-sm font-bold ${satisfiesMatch ? 'text-emerald-800' : 'text-amber-800'}">Nivel de Coincidencia: ${matchScore}%</span>
                                     <span class="text-xs px-2 py-0.5 rounded font-bold ${satisfiesMatch ? 'bg-emerald-200 text-emerald-900' : 'bg-amber-200 text-amber-900'}">
-                                        ${satisfiesMatch ? 'Apto para aplicar' : 'Mínimo requerido: 85%'}
+                                        ${satisfiesMatch ? '¡Apto para Postularte!' : 'Se requiere al menos 85%'}
                                     </span>
                                 </div>
                                 <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
@@ -300,9 +323,9 @@
                             ${state.token && state.role === 'candidate' ? `
                                 <button onclick="applyToJob(${job.id})" ${!satisfiesMatch ? 'disabled' : ''} 
                                     class="w-full py-2.5 rounded-lg text-sm font-bold text-white transition ${satisfiesMatch ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-300 cursor-not-allowed'}">
-                                    ${satisfiesMatch ? 'Postularme a esta Vacante' : 'Compatibilidad Insuficiente (<85%)'}
+                                    ${satisfiesMatch ? 'Enviar Postulación' : 'No cumples el 85% requerido'}
                                 </button>
-                            ` : `<p class="text-xs text-gray-500 text-center w-full">Inicia sesión como Candidato para ver tu nivel de compatibilidad y postularte.</p>`}
+                            ` : `<p class="text-xs text-gray-500 text-center w-full">Inicia sesión como Candidato para postularte.</p>`}
                         </div>
                     </div>
                 `;
@@ -321,7 +344,7 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    alert('¡Postulación realizada con éxito!');
+                    alert('¡Postulación enviada exitosamente!');
                     closeModal();
                 } else { alert(data.error); }
             } catch (err) { console.error(err); }
@@ -443,12 +466,15 @@
             } catch (err) { console.error(err); }
         }
 
-        // ==================== PERFIL DE USUARIO Y ELIMINAR HABILIDADES ====================
+        // ==================== PERFIL DE USUARIO ====================
         async function renderProfile(container) {
             tempProfilePicBase64 = state.profile_picture;
             let locationOptions = LOCATIONS_LIST.map(l => `<option value="${l}" ${state.location === l ? 'selected' : ''}>${l}</option>`).join('');
-            let techOptions = TECHNICAL_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
-            let softOptions = SOFT_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+            
+            let academicOpt = ACADEMIC_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+            let coreOpt = CORE_CATEGORIES.map(s => `<option value="${s}">${s}</option>`).join('');
+            let otherOpt = OTHER_AREAS_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+            let softOpt = SOFT_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
             let expOptions = EXPERIENCE_LEVELS.map(e => `<option value="${e.value}">${e.label}</option>`).join('');
 
             container.innerHTML = `
@@ -479,19 +505,21 @@
 
                     ${state.role === 'candidate' ? `
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                        <h3 class="text-lg font-bold mb-2">Mis Habilidades y Aptitudes Profesionales</h3>
-                        <p class="text-xs text-gray-500 mb-4">Agrega tus habilidades para matchear con los requisitos de las vacantes.</p>
+                        <h3 class="text-lg font-bold mb-2">Mis Habilidades, Bachiller & Conocimientos</h3>
+                        <p class="text-xs text-gray-500 mb-4">Selecciona Bachiller, Informática, Marketing Digital o cualquier área laboral.</p>
                         
                         <div class="space-y-3 mb-6">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Habilidad / Aptitud</label>
+                                <label class="block text-sm font-medium text-gray-700">Seleccionar Habilidad / Área</label>
                                 <select id="skill-name" class="w-full border rounded-lg px-3 py-2 mt-1 bg-white text-sm">
-                                    <optgroup label="Habilidades Técnicas">${techOptions}</optgroup>
-                                    <optgroup label="Aptitudes (Soft Skills)">${softOptions}</optgroup>
+                                    <optgroup label="Nivel Académico">${academicOpt}</optgroup>
+                                    <optgroup label="Informática & Marketing Digital">${coreOpt}</optgroup>
+                                    <optgroup label="Otras Áreas Laborales">${otherOpt}</optgroup>
+                                    <optgroup label="Aptitudes Personales">${softOpt}</optgroup>
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Años de Experiencia</label>
+                                <label class="block text-sm font-medium text-gray-700">Experiencia</label>
                                 <select id="skill-exp" class="w-full border rounded-lg px-3 py-2 mt-1 bg-white text-sm">
                                     ${expOptions}
                                 </select>
@@ -500,9 +528,9 @@
                         </div>
 
                         <div>
-                            <h4 class="text-sm font-semibold text-gray-700 mb-2">Habilidades Registradas:</h4>
+                            <h4 class="text-sm font-semibold text-gray-700 mb-2">Habilidades en tu Perfil:</h4>
                             <div id="user-skills-badges" class="flex flex-wrap gap-2">
-                                <p class="text-xs text-gray-400">Cargando tus habilidades...</p>
+                                <p class="text-xs text-gray-400">Cargando habilidades...</p>
                             </div>
                         </div>
                     </div>` : ''}
@@ -531,7 +559,7 @@
 
                 badgesContainer.innerHTML = skills.map(s => `
                     <span class="bg-blue-50 text-blue-700 border border-blue-200 text-xs px-3 py-1 rounded-full font-medium flex items-center gap-2">
-                        ⚡ ${s.skill_name} (${s.level} año/s)
+                        ⚡ ${s.skill_name}
                         <button onclick="removeSkill(${s.id})" class="text-red-500 hover:text-red-700 font-bold ml-1" title="Eliminar">✕</button>
                     </span>
                 `).join('');
@@ -544,9 +572,7 @@
                     method: 'DELETE',
                     headers: { 'Authorization': `Bearer ${state.token}` }
                 });
-                if (res.ok) {
-                    loadUserSkills();
-                }
+                if (res.ok) { loadUserSkills(); }
             } catch (err) { console.error(err); }
         }
 
@@ -643,8 +669,10 @@
         }
 
         function renderCreateJob(container) {
-            let techOptions = TECHNICAL_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
-            let softOptions = SOFT_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+            let academicOpt = ACADEMIC_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+            let coreOpt = CORE_CATEGORIES.map(s => `<option value="${s}">${s}</option>`).join('');
+            let otherOpt = OTHER_AREAS_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+            let softOpt = SOFT_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
             let locationOptions = LOCATIONS_LIST.map(l => `<option value="${l}">${l}</option>`).join('');
 
             container.innerHTML = `
@@ -653,7 +681,7 @@
                     <form onsubmit="handleCreateJob(event)" class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Título del Puesto</label>
-                            <input type="text" id="job-title" required class="w-full border rounded-lg px-3 py-2 mt-1">
+                            <input type="text" id="job-title" placeholder="Ej: Especialista en Marketing Digital / Programador" required class="w-full border rounded-lg px-3 py-2 mt-1">
                         </div>
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
@@ -673,17 +701,19 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Rango Salarial</label>
-                            <input type="text" id="job-salary" placeholder="Ej: $45,000 - $60,000 DOP" class="w-full border rounded-lg px-3 py-2 mt-1">
+                            <input type="text" id="job-salary" placeholder="Ej: $40,000 - $60,000 DOP" class="w-full border rounded-lg px-3 py-2 mt-1">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Descripción del Puesto</label>
                             <textarea id="job-desc" rows="4" required class="w-full border rounded-lg px-3 py-2 mt-1"></textarea>
                         </div>
                         <div class="p-4 bg-gray-50 rounded-lg border">
-                            <label class="block text-sm font-semibold text-gray-800 mb-1">Requisito Obligatorio (Habilidad / Aptitud Clave)</label>
+                            <label class="block text-sm font-semibold text-gray-800 mb-1">Requisito Obligatorio Exigido para el Match (85%)</label>
                             <select id="req-skill" class="w-full border rounded-lg px-3 py-2 bg-white text-sm mb-2">
-                                <optgroup label="Técnicas">${techOptions}</optgroup>
-                                <optgroup label="Aptitudes">${softOptions}</optgroup>
+                                <optgroup label="Nivel Académico">${academicOpt}</optgroup>
+                                <optgroup label="Informática & Marketing Digital">${coreOpt}</optgroup>
+                                <optgroup label="Otras Áreas Laborales">${otherOpt}</optgroup>
+                                <optgroup label="Aptitudes Personales">${softOpt}</optgroup>
                             </select>
                         </div>
                         <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition">Publicar Vacante</button>

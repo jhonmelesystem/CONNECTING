@@ -1,4 +1,4 @@
-const express = require('cors') && require('express'); // Manteniendo compatibilidad
+const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const bcrypt = require('bcryptjs');
@@ -8,16 +8,14 @@ require('dotenv').config();
 
 const app = express();
 
-// Middlewares esenciales
-app.use(express.json({ limit: '10mb' })); // Límite amplio para recibir fotos de perfil en Base64
+// Middlewares
+app.use(express.json({ limit: '10mb' })); // Soporte para imágenes Base64
 app.use(cors());
-
-// Servir archivos estáticos del frontend (carpeta public)
 app.use(express.static(path.join(__dirname, 'public')));
 
 const JWT_SECRET = process.env.JWT_SECRET || 'connecting_secreto_super_seguro';
 
-// Ruta Raíz de salud/API
+// Ruta de salud
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: '🚀 Servidor API de CONNECTING activo y funcionando.' });
 });
@@ -35,7 +33,7 @@ function verifyToken(req, res, next) {
   });
 }
 
-// ==================== RUTAS DE AUTENTICACIÓN Y PERFIL ====================
+// ==================== AUTH Y PERFIL ====================
 
 app.post('/api/register', async (req, res) => {
   const { name, email, password, role, location, profile_picture } = req.body;
@@ -83,7 +81,6 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Actualizar perfil de usuario
 app.put('/api/profile', verifyToken, async (req, res) => {
   const { name, location, profile_picture } = req.body;
   try {
@@ -99,7 +96,7 @@ app.put('/api/profile', verifyToken, async (req, res) => {
   }
 });
 
-// ==================== RUTAS DE HABILIDADES Y APTITUDES ====================
+// ==================== HABILIDADES ====================
 
 app.post('/api/skills', verifyToken, async (req, res) => {
   if (req.user.role !== 'candidate') return res.status(403).json({ error: 'Solo candidatos' });
@@ -125,7 +122,6 @@ app.get('/api/skills', verifyToken, async (req, res) => {
   }
 });
 
-// Eliminar habilidad individual del candidato
 app.delete('/api/skills/:id', verifyToken, async (req, res) => {
   if (req.user.role !== 'candidate') return res.status(403).json({ error: 'Solo candidatos' });
   try {
@@ -136,7 +132,7 @@ app.delete('/api/skills/:id', verifyToken, async (req, res) => {
   }
 });
 
-// ==================== VACANTES, FILTROS Y SMART SCREENING ====================
+// ==================== VACANTES Y SMART SCREENING (85%) ====================
 
 app.get('/api/jobs', async (req, res) => {
   try {
@@ -146,7 +142,7 @@ app.get('/api/jobs', async (req, res) => {
 
     if (search) {
       query += ` AND (j.title LIKE ? OR j.description LIKE ? OR j.location LIKE ?)`;
-      queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
+      queryParams.push(`%${search}%`, `%${search}\%`, `\%${search}%`);
     }
 
     if (modality && modality !== 'all') {
@@ -173,7 +169,6 @@ app.get('/api/employer/jobs', verifyToken, async (req, res) => {
   }
 });
 
-// Crear vacante con requisitos
 app.post('/api/jobs', verifyToken, async (req, res) => {
   if (req.user.role !== 'employer') return res.status(403).json({ error: 'Solo empleadores' });
   const { title, description, location, salary_range, modality, requirements } = req.body;
@@ -200,7 +195,6 @@ app.post('/api/jobs', verifyToken, async (req, res) => {
   }
 });
 
-// Editar vacante
 app.put('/api/jobs/:id', verifyToken, async (req, res) => {
   if (req.user.role !== 'employer') return res.status(403).json({ error: 'Solo empleadores' });
   const jobId = req.params.id;
@@ -222,7 +216,6 @@ app.put('/api/jobs/:id', verifyToken, async (req, res) => {
   }
 });
 
-// Eliminar vacante
 app.delete('/api/jobs/:id', verifyToken, async (req, res) => {
   if (req.user.role !== 'employer') return res.status(403).json({ error: 'Solo empleadores' });
   const jobId = req.params.id;
@@ -237,7 +230,6 @@ app.delete('/api/jobs/:id', verifyToken, async (req, res) => {
   }
 });
 
-// Detalle y Smart Screening (Evaluación del 85% de compatibilidad)
 app.get('/api/jobs/:id', async (req, res) => {
   const jobId = req.params.id;
   
@@ -258,7 +250,7 @@ app.get('/api/jobs/:id', async (req, res) => {
     const job = jobs[0];
     const [requirements] = await db.query(`SELECT * FROM job_requirements WHERE job_id = ?`, [jobId]);
 
-    let eligibility = { canApply: false, matchPercentage: 100, failedMandatory: [] };
+    let eligibility = { canApply: false, matchPercentage: 100 };
 
     if (candidateId) {
       const [candidateSkills] = await db.query(`SELECT * FROM user_skills WHERE user_id = ?`, [candidateId]);
@@ -273,9 +265,9 @@ app.get('/api/jobs/:id', async (req, res) => {
         const matchPercentage = Math.round((matchedCount / requirements.length) * 100);
         const canApply = matchPercentage >= 85;
 
-        eligibility = { canApply, matchPercentage, failedMandatory: [] };
+        eligibility = { canApply, matchPercentage };
       } else {
-        eligibility = { canApply: true, matchPercentage: 100, failedMandatory: [] };
+        eligibility = { canApply: true, matchPercentage: 100 };
       }
     }
 
@@ -285,7 +277,6 @@ app.get('/api/jobs/:id', async (req, res) => {
   }
 });
 
-// Postulación a empleo
 app.post('/api/jobs/:id/apply', verifyToken, async (req, res) => {
   if (req.user.role !== 'candidate') return res.status(403).json({ error: 'Solo candidatos' });
   const jobId = req.params.id;
@@ -322,7 +313,6 @@ app.post('/api/jobs/:id/apply', verifyToken, async (req, res) => {
   }
 });
 
-// Redireccionar cualquier otra ruta no-API al frontend index.html
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
