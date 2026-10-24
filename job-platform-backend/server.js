@@ -30,7 +30,7 @@ function verifyToken(req, res, next) {
   });
 }
 
-// FUNCIÓN DE MATCHING FLEXIBLE (Smart Screening Corregida)
+// MATCHING FLEXIBLE
 function checkSkillMatch(candidateSkills, requirementSkill) {
   if (!requirementSkill) return 100;
   
@@ -38,7 +38,6 @@ function checkSkillMatch(candidateSkills, requirementSkill) {
   const reqItems = reqClean.split(',').map(item => item.trim()).filter(Boolean);
 
   let matchedItems = 0;
-
   const normalize = str => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
   reqItems.forEach(reqSingle => {
@@ -52,16 +51,14 @@ function checkSkillMatch(candidateSkills, requirementSkill) {
              (reqNorm.includes('marketing') && candNorm.includes('marketing'));
     });
 
-    if (isMatched) {
-      matchedItems++;
-    }
+    if (isMatched) matchedItems++;
   });
 
   const totalReqs = reqItems.length > 0 ? reqItems.length : 1;
   return Math.round((matchedItems / totalReqs) * 100);
 }
 
-// ==================== AUTH Y PERFIL ====================
+// ==================== AUTH & PERFIL ====================
 
 app.post('/api/register', async (req, res) => {
   const { name, email, password, role, location, profile_picture } = req.body;
@@ -124,7 +121,7 @@ app.put('/api/profile', verifyToken, async (req, res) => {
   }
 });
 
-// ==================== HABILIDADES ====================
+// ==================== HABILIDADES CANDIDATO ====================
 
 app.post('/api/skills', verifyToken, async (req, res) => {
   if (req.user.role !== 'candidate') return res.status(403).json({ error: 'Solo candidatos' });
@@ -160,7 +157,7 @@ app.delete('/api/skills/:id', verifyToken, async (req, res) => {
   }
 });
 
-// ==================== VACANTES Y EVALUACIÓN ====================
+// ==================== VACANTES & POSTULADOS ====================
 
 app.get('/api/jobs', async (req, res) => {
   try {
@@ -197,6 +194,36 @@ app.get('/api/employer/jobs', verifyToken, async (req, res) => {
   }
 });
 
+// OBTENER CANDIDATOS QUE APLICARON A UNA VACANTE
+app.get('/api/employer/jobs/:id/applications', verifyToken, async (req, res) => {
+  if (req.user.role !== 'employer') return res.status(403).json({ error: 'Acceso denegado' });
+  const jobId = req.params.id;
+
+  try {
+    // Validar propiedad de la vacante
+    const [check] = await db.query(`SELECT id FROM jobs WHERE id = ? AND employer_id = ?`, [jobId, req.user.id]);
+    if (check.length === 0) return res.status(404).json({ error: 'Vacante no encontrada o sin permisos' });
+
+    const [applicants] = await db.query(`
+      SELECT a.id as application_id, a.applied_at, u.id as candidate_id, u.name, u.email, u.location, u.profile_picture
+      FROM applications a
+      JOIN users u ON a.candidate_id = u.id
+      WHERE a.job_id = ?
+      ORDER BY a.applied_at DESC
+    `, [jobId]);
+
+    // Incluir habilidades de cada candidato
+    for (let candidate of applicants) {
+      const [skills] = await db.query(`SELECT skill_name, level FROM user_skills WHERE user_id = ?`, [candidate.candidate_id]);
+      candidate.skills = skills;
+    }
+
+    res.json(applicants);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/api/jobs', verifyToken, async (req, res) => {
   if (req.user.role !== 'employer') return res.status(403).json({ error: 'Solo empleadores' });
   const { title, description, location, salary_range, modality, requirements } = req.body;
@@ -212,7 +239,7 @@ app.post('/api/jobs', verifyToken, async (req, res) => {
       for (let reqItem of requirements) {
         await db.query(
           `INSERT INTO job_requirements (job_id, skill_name, level_required, is_mandatory) VALUES (?, ?, ?, 1)`,
-          [jobId, reqItem.skill_name, reqItem.level_required || 1]
+          [jobId, reqItem.skill_name || reqItem, 1]
         );
       }
     }
@@ -226,7 +253,7 @@ app.post('/api/jobs', verifyToken, async (req, res) => {
 app.put('/api/jobs/:id', verifyToken, async (req, res) => {
   if (req.user.role !== 'employer') return res.status(403).json({ error: 'Solo empleadores' });
   const jobId = req.params.id;
-  const { title, description, location, salary_range, modality } = req.body;
+  const { title, description, location, salary_range, modality, requirements } = req.body;
 
   try {
     const [result] = await db.query(
@@ -236,6 +263,16 @@ app.put('/api/jobs/:id', verifyToken, async (req, res) => {
 
     if (result.affectedRows === 0) {
       return res.status(404).json({ error: 'Vacante no encontrada o sin permisos.' });
+    }
+
+    if (requirements && Array.isArray(requirements)) {
+      await db.query(`DELETE FROM job_requirements WHERE job_id = ?`, [jobId]);
+      for (let reqItem of requirements) {
+        await db.query(
+          `INSERT INTO job_requirements (job_id, skill_name, level_required, is_mandatory) VALUES (?, ?, ?, 1)`,
+          [jobId, reqItem.skill_name || reqItem, 1]
+        );
+      }
     }
 
     res.json({ message: 'Vacante actualizada correctamente' });
@@ -258,7 +295,6 @@ app.delete('/api/jobs/:id', verifyToken, async (req, res) => {
   }
 });
 
-// DETALLE & MATCHING INTELIGENTE (Smart Screening)
 app.get('/api/jobs/:id', async (req, res) => {
   const jobId = req.params.id;
   
