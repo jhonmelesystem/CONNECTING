@@ -264,6 +264,7 @@
             } catch (error) { console.error(error); }
         }
 
+        // DETALLE DE VACANTE Y SMART SCREENING CONTROLADO
         async function openJobDetail(jobId) {
             const modal = document.getElementById('job-modal');
             const content = document.getElementById('modal-content');
@@ -273,13 +274,21 @@
             try {
                 const headers = state.token ? { 'Authorization': `Bearer ${state.token}` } : {};
                 const res = await fetch(`${API_URL}/jobs/${jobId}`, { headers });
-                const data = await res.json();
+                
+                if (!res.ok) {
+                    content.innerHTML = `<p class="text-center py-8 text-red-500 font-semibold">Ocurrió un error al cargar la información de la vacante.</p>`;
+                    return;
+                }
 
-                const { job, requirements, eligibility } = data;
-                const matchScore = eligibility ? eligibility.matchPercentage : 0;
+                const data = await res.json();
+                const job = data.job || {};
+                const requirements = data.requirements || [];
+                const eligibility = data.eligibility || { canApply: false, matchPercentage: 0 };
+                
+                const matchScore = eligibility.matchPercentage || 0;
                 const satisfiesMatch = matchScore >= 85;
 
-                let reqBadges = (requirements || []).map(r => `
+                let reqBadges = requirements.map(r => `
                     <span class="bg-blue-50 text-blue-800 border border-blue-200 text-xs px-2.5 py-1 rounded-full font-medium">
                         ⚡ ${r.skill_name}
                     </span>
@@ -288,14 +297,14 @@
                 content.innerHTML = `
                     <div class="space-y-4">
                         <div class="border-b pb-3">
-                            <h2 class="text-2xl font-bold text-gray-900">${job.title}</h2>
-                            <p class="text-sm text-gray-600">${job.employer_name} • 📍 ${job.location}</p>
+                            <h2 class="text-2xl font-bold text-gray-900">${job.title || 'Vacante'}</h2>
+                            <p class="text-sm text-gray-600">${job.employer_name || 'Empresa'} • 📍 ${job.location || 'N/A'}</p>
                             <p class="text-emerald-600 font-bold text-sm mt-1">${job.salary_range || 'Salario a convenir'}</p>
                         </div>
 
                         <div>
                             <h4 class="font-semibold text-sm text-gray-700">Descripción de la Vacante:</h4>
-                            <p class="text-sm text-gray-600 mt-1">${job.description}</p>
+                            <p class="text-sm text-gray-600 mt-1">${job.description || 'Sin descripción.'}</p>
                         </div>
 
                         <div>
@@ -327,7 +336,10 @@
                         </div>
                     </div>
                 `;
-            } catch (err) { console.error(err); }
+            } catch (err) { 
+                console.error(err); 
+                content.innerHTML = `<p class="text-center py-8 text-red-500">Error inesperado al conectar con el servidor.</p>`;
+            }
         }
 
         function closeModal() {
@@ -950,7 +962,6 @@
             } catch (err) { console.error(err); }
         }
 
-        // INICIALIZAR RENDERIZADO AUTOMÁTICO
         document.addEventListener('DOMContentLoaded', () => { 
             render(); 
         });
