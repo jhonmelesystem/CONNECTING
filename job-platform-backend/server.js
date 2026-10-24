@@ -219,3 +219,10 @@ app.get('/api/employer/jobs/:id/applications', verifyToken, async (req, res) => 
     res.status(500).json({ error: err.message });
   }
 });
+
+// ESCUCHA DEL PUERTO PARA RAILWAY
+const PORT = process.env.PORT || 4000;
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Servidor CONNECTING corriendo correctamente en el puerto ${PORT}`);
+});
