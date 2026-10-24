@@ -27,6 +27,14 @@
     <!-- CONTENEDOR PRINCIPAL -->
     <main id="main-content" class="max-w-6xl mx-auto px-4 py-8 flex-grow w-full"></main>
 
+    <!-- MODAL DE DETALLES Y SMART SCREENING -->
+    <div id="job-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 shadow-xl relative">
+            <button onclick="closeModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600 text-xl font-bold">✕</button>
+            <div id="modal-content"></div>
+        </div>
+    </div>
+
     <!-- PIE DE PÁGINA -->
     <footer class="bg-gray-900 text-gray-400 text-center py-4 text-xs mt-auto">
         &copy; 2026 CONNECTING. Todos los derechos reservados.
@@ -63,9 +71,9 @@
         const EXPERIENCE_LEVELS = [
             { value: 1, label: 'Menos de 1 año (Junior / Principiante)' },
             { value: 2, label: '1 a 2 años de experiencia' },
-            { value: 3, label: '3 a 5 años de experiencia (Intermedio / Semi-Senior)' },
+            { value: 3, label: '3 a 5 años de experiencia (Semi-Senior)' },
             { value: 4, label: '5 a 8 años de experiencia (Senior)' },
-            { value: 5, label: 'Más de 8 años (Expert / Lead / Especialista)' }
+            { value: 5, label: 'Más de 8 años (Especialista)' }
         ];
 
         const LOCATIONS_LIST = [
@@ -166,7 +174,7 @@
 
                 <div class="mb-6">
                     <h2 class="text-2xl font-bold text-gray-800">Empleos Disponibles</h2>
-                    <p class="text-sm text-gray-600">Conectando talento con oportunidades en tiempo real.</p>
+                    <p class="text-sm text-gray-600">Postulaciones evaluadas con compatibilidad Smart Screening.</p>
                 </div>
 
                 <div id="jobs-list" class="space-y-4">
@@ -208,11 +216,6 @@
                     if (job.modality === 'remoto') badge = '<span class="bg-green-100 text-green-800 text-xs px-2.5 py-1 rounded-full font-semibold">💻 Remoto</span>';
                     if (job.modality === 'hibrido') badge = '<span class="bg-purple-100 text-purple-800 text-xs px-2.5 py-1 rounded-full font-semibold">🔄 Híbrido</span>';
 
-                    // Corrección del botón según estado de sesión
-                    let actionButton = state.token
-                        ? `<button onclick="applyToJob(${job.id})" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">Postularme</button>`
-                        : `<button onclick="alert('Inicia sesión para ver detalles y postularte')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">Ver Detalle</button>`;
-
                     html += `
                         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
                             <div class="flex justify-between items-start">
@@ -228,7 +231,9 @@
                             <p class="text-gray-700 mt-3 text-sm line-clamp-2">${job.description}</p>
                             <div class="mt-4 flex justify-between items-center pt-3 border-t border-gray-50">
                                 <span class="text-sm font-semibold text-emerald-600">${job.salary_range || 'Salario a convenir'}</span>
-                                ${actionButton}
+                                <button onclick="openJobDetail(${job.id})" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
+                                    Ver Detalle
+                                </button>
                             </div>
                         </div>
                     `;
@@ -237,12 +242,78 @@
             } catch (error) { console.error(error); }
         }
 
-        async function applyToJob(jobId) {
-            if (state.role !== 'candidate') {
-                alert('Solo las cuentas de Candidato pueden postularse a empleos.');
-                return;
-            }
+        // ==================== MODAL DE DETALLE Y SMART SCREENING ====================
+        async function openJobDetail(jobId) {
+            const modal = document.getElementById('job-modal');
+            const content = document.getElementById('modal-content');
+            modal.classList.remove('hidden');
+            content.innerHTML = `<p class="text-center py-8 text-gray-500">Evaluando compatibilidad con Smart Screening...</p>`;
 
+            try {
+                const headers = state.token ? { 'Authorization': `Bearer ${state.token}` } : {};
+                const res = await fetch(`${API_URL}/jobs/${jobId}`, { headers });
+                const data = await res.json();
+
+                const { job, requirements, eligibility } = data;
+                const matchScore = eligibility ? eligibility.matchPercentage : 0;
+                const satisfiesMatch = matchScore >= 85;
+
+                let reqBadges = requirements.map(r => `
+                    <span class="bg-gray-100 text-gray-800 text-xs px-2.5 py-1 rounded-full font-medium">
+                        ⚡ ${r.skill_name}
+                    </span>
+                `).join('');
+
+                content.innerHTML = `
+                    <div class="space-y-4">
+                        <div class="border-b pb-3">
+                            <h2 class="text-2xl font-bold text-gray-900">${job.title}</h2>
+                            <p class="text-sm text-gray-600">${job.employer_name} • 📍 ${job.location}</p>
+                            <p class="text-emerald-600 font-bold text-sm mt-1">${job.salary_range || 'Salario a convenir'}</p>
+                        </div>
+
+                        <div>
+                            <h4 class="font-semibold text-sm text-gray-700">Descripción:</h4>
+                            <p class="text-sm text-gray-600 mt-1">${job.description}</p>
+                        </div>
+
+                        <div>
+                            <h4 class="font-semibold text-sm text-gray-700 mb-2">Habilidades Requeridas:</h4>
+                            <div class="flex flex-wrap gap-2">${reqBadges || '<span class="text-xs text-gray-400">Sin requisitos específicos</span>'}</div>
+                        </div>
+
+                        ${state.token && state.role === 'candidate' ? `
+                            <div class="p-4 rounded-xl ${satisfiesMatch ? 'bg-emerald-50 border border-emerald-200' : 'bg-amber-50 border border-amber-200'}">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-sm font-bold ${satisfiesMatch ? 'text-emerald-800' : 'text-amber-800'}">Compatibilidad de Perfil: ${matchScore}%</span>
+                                    <span class="text-xs px-2 py-0.5 rounded font-bold ${satisfiesMatch ? 'bg-emerald-200 text-emerald-900' : 'bg-amber-200 text-amber-900'}">
+                                        ${satisfiesMatch ? 'Apto para aplicar' : 'Mínimo requerido: 85%'}
+                                    </span>
+                                </div>
+                                <div class="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+                                    <div class="h-2.5 rounded-full ${satisfiesMatch ? 'bg-emerald-600' : 'bg-amber-500'}" style="width: ${matchScore}%"></div>
+                                </div>
+                            </div>
+                        ` : ''}
+
+                        <div class="pt-4 flex gap-3 border-t">
+                            ${state.token && state.role === 'candidate' ? `
+                                <button onclick="applyToJob(${job.id})" ${!satisfiesMatch ? 'disabled' : ''} 
+                                    class="w-full py-2.5 rounded-lg text-sm font-bold text-white transition ${satisfiesMatch ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-gray-300 cursor-not-allowed'}">
+                                    ${satisfiesMatch ? 'Postularme a esta Vacante' : 'Compatibilidad Insuficiente (<85%)'}
+                                </button>
+                            ` : `<p class="text-xs text-gray-500 text-center w-full">Inicia sesión como Candidato para ver tu nivel de compatibilidad y postularte.</p>`}
+                        </div>
+                    </div>
+                `;
+            } catch (err) { console.error(err); }
+        }
+
+        function closeModal() {
+            document.getElementById('job-modal').classList.add('hidden');
+        }
+
+        async function applyToJob(jobId) {
             try {
                 const res = await fetch(`${API_URL}/jobs/${jobId}/apply`, {
                     method: 'POST',
@@ -250,10 +321,9 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    alert(data.message || '¡Postulación enviada correctamente!');
-                } else {
-                    alert(data.error);
-                }
+                    alert('¡Postulación realizada con éxito!');
+                    closeModal();
+                } else { alert(data.error); }
             } catch (err) { console.error(err); }
         }
 
@@ -373,7 +443,7 @@
             } catch (err) { console.error(err); }
         }
 
-        // ==================== PERFIL DE USUARIO ====================
+        // ==================== PERFIL DE USUARIO Y ELIMINAR HABILIDADES ====================
         async function renderProfile(container) {
             tempProfilePicBase64 = state.profile_picture;
             let locationOptions = LOCATIONS_LIST.map(l => `<option value="${l}" ${state.location === l ? 'selected' : ''}>${l}</option>`).join('');
@@ -383,7 +453,6 @@
 
             container.innerHTML = `
                 <div class="max-w-2xl mx-auto space-y-6">
-                    <!-- Configuración General del Perfil (Sin la palabra Hola) -->
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                         <h2 class="text-xl font-bold mb-4">${state.name || 'Perfil de Usuario'}</h2>
                         <form onsubmit="handleUpdateProfile(event)" class="space-y-4">
@@ -408,15 +477,14 @@
                         </form>
                     </div>
 
-                    <!-- Múltiples Habilidades sin Límite para Candidatos -->
                     ${state.role === 'candidate' ? `
                     <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                         <h3 class="text-lg font-bold mb-2">Mis Habilidades y Aptitudes Profesionales</h3>
-                        <p class="text-xs text-gray-500 mb-4">Agrega todas las habilidades y competencias que poseas para maximizar tu compatibilidad.</p>
+                        <p class="text-xs text-gray-500 mb-4">Agrega tus habilidades para matchear con los requisitos de las vacantes.</p>
                         
                         <div class="space-y-3 mb-6">
                             <div>
-                                <label class="block text-sm font-medium text-gray-700">Seleccionar Habilidad / Aptitud</label>
+                                <label class="block text-sm font-medium text-gray-700">Habilidad / Aptitud</label>
                                 <select id="skill-name" class="w-full border rounded-lg px-3 py-2 mt-1 bg-white text-sm">
                                     <optgroup label="Habilidades Técnicas">${techOptions}</optgroup>
                                     <optgroup label="Aptitudes (Soft Skills)">${softOptions}</optgroup>
@@ -431,7 +499,6 @@
                             <button onclick="addUserSkill()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700 transition">+ Agregar Habilidad</button>
                         </div>
 
-                        <!-- Contenedor donde se listan las habilidades agregadas -->
                         <div>
                             <h4 class="text-sm font-semibold text-gray-700 mb-2">Habilidades Registradas:</h4>
                             <div id="user-skills-badges" class="flex flex-wrap gap-2">
@@ -463,10 +530,23 @@
                 }
 
                 badgesContainer.innerHTML = skills.map(s => `
-                    <span class="bg-blue-50 text-blue-700 border border-blue-200 text-xs px-3 py-1 rounded-full font-medium flex items-center gap-1">
+                    <span class="bg-blue-50 text-blue-700 border border-blue-200 text-xs px-3 py-1 rounded-full font-medium flex items-center gap-2">
                         ⚡ ${s.skill_name} (${s.level} año/s)
+                        <button onclick="removeSkill(${s.id})" class="text-red-500 hover:text-red-700 font-bold ml-1" title="Eliminar">✕</button>
                     </span>
                 `).join('');
+            } catch (err) { console.error(err); }
+        }
+
+        async function removeSkill(skillId) {
+            try {
+                const res = await fetch(`${API_URL}/skills/${skillId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${state.token}` }
+                });
+                if (res.ok) {
+                    loadUserSkills();
+                }
             } catch (err) { console.error(err); }
         }
 

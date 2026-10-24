@@ -1,4 +1,4 @@
-const express = require('express');
+const express = require('cors') && require('express'); // Manteniendo compatibilidad
 const cors = require('cors');
 const path = require('path');
 const bcrypt = require('bcryptjs');
@@ -8,16 +8,21 @@ require('dotenv').config();
 
 const app = express();
 
-app.use(express.json({ limit: '10mb' })); // Límite amplio para recibir imágenes en Base64
+// Middlewares esenciales
+app.use(express.json({ limit: '10mb' })); // Límite amplio para recibir fotos de perfil en Base64
 app.use(cors());
+
+// Servir archivos estáticos del frontend (carpeta public)
 app.use(express.static(path.join(__dirname, 'public')));
 
 const JWT_SECRET = process.env.JWT_SECRET || 'connecting_secreto_super_seguro';
 
+// Ruta Raíz de salud/API
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: '🚀 Servidor API de CONNECTING activo y funcionando.' });
 });
 
+// Middleware de autenticación
 function verifyToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   if (!authHeader) return res.status(403).json({ error: 'Token requerido' });
@@ -30,7 +35,7 @@ function verifyToken(req, res, next) {
   });
 }
 
-// ==================== AUTH & PERFIL ====================
+// ==================== RUTAS DE AUTENTICACIÓN Y PERFIL ====================
 
 app.post('/api/register', async (req, res) => {
   const { name, email, password, role, location, profile_picture } = req.body;
@@ -78,7 +83,7 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Actualizar Perfil (Nombre, Ubicación, Foto)
+// Actualizar perfil de usuario
 app.put('/api/profile', verifyToken, async (req, res) => {
   const { name, location, profile_picture } = req.body;
   try {
@@ -87,29 +92,25 @@ app.put('/api/profile', verifyToken, async (req, res) => {
       [name, location, profile_picture, req.user.id]
     );
 
-    // Devolver datos actualizados
     const [updatedUser] = await db.query(`SELECT id, name, role, email, location, profile_picture FROM users WHERE id = ?`, [req.user.id]);
-
     res.json({ message: 'Perfil actualizado correctamente', user: updatedUser[0] });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
 
-// ==================== HABILIDADES DEL CANDIDATO ====================
+// ==================== RUTAS DE HABILIDADES Y APTITUDES ====================
 
 app.post('/api/skills', verifyToken, async (req, res) => {
   if (req.user.role !== 'candidate') return res.status(403).json({ error: 'Solo candidatos' });
   const { skill_name, experience_years } = req.body;
 
   try {
-    // Evitar duplicadas
-    await db.query(`DELETE FROM user_skills WHERE user_id = ? AND skill_name = ?`, [req.user.id, skill_name]);
     const [result] = await db.query(
       `INSERT INTO user_skills (user_id, skill_name, level) VALUES (?, ?, ?)`,
       [req.user.id, skill_name, experience_years || 1]
     );
-    res.json({ message: 'Habilidad/Aptitud guardada', skillId: result.insertId });
+    res.json({ message: 'Habilidad agregada', skillId: result.insertId });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
@@ -124,7 +125,18 @@ app.get('/api/skills', verifyToken, async (req, res) => {
   }
 });
 
-// ==================== VACANTES Y GESTIÓN ====================
+// Eliminar habilidad individual del candidato
+app.delete('/api/skills/:id', verifyToken, async (req, res) => {
+  if (req.user.role !== 'candidate') return res.status(403).json({ error: 'Solo candidatos' });
+  try {
+    await db.query(`DELETE FROM user_skills WHERE id = ? AND user_id = ?`, [req.params.id, req.user.id]);
+    res.json({ message: 'Habilidad eliminada correctamente' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ==================== VACANTES, FILTROS Y SMART SCREENING ====================
 
 app.get('/api/jobs', async (req, res) => {
   try {
@@ -161,7 +173,7 @@ app.get('/api/employer/jobs', verifyToken, async (req, res) => {
   }
 });
 
-// Crear vacante con requisitos / habilidades obligatorias
+// Crear vacante con requisitos
 app.post('/api/jobs', verifyToken, async (req, res) => {
   if (req.user.role !== 'employer') return res.status(403).json({ error: 'Solo empleadores' });
   const { title, description, location, salary_range, modality, requirements } = req.body;
@@ -188,7 +200,7 @@ app.post('/api/jobs', verifyToken, async (req, res) => {
   }
 });
 
-// Editar vacante existente
+// Editar vacante
 app.put('/api/jobs/:id', verifyToken, async (req, res) => {
   if (req.user.role !== 'employer') return res.status(403).json({ error: 'Solo empleadores' });
   const jobId = req.params.id;
@@ -210,6 +222,7 @@ app.put('/api/jobs/:id', verifyToken, async (req, res) => {
   }
 });
 
+// Eliminar vacante
 app.delete('/api/jobs/:id', verifyToken, async (req, res) => {
   if (req.user.role !== 'employer') return res.status(403).json({ error: 'Solo empleadores' });
   const jobId = req.params.id;
@@ -224,6 +237,92 @@ app.delete('/api/jobs/:id', verifyToken, async (req, res) => {
   }
 });
 
+// Detalle y Smart Screening (Evaluación del 85% de compatibilidad)
+app.get('/api/jobs/:id', async (req, res) => {
+  const jobId = req.params.id;
+  
+  let candidateId = null;
+  const authHeader = req.headers['authorization'];
+  if (authHeader) {
+    const token = authHeader.split(' ')[1];
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      candidateId = decoded.id;
+    } catch (e) {}
+  }
+
+  try {
+    const [jobs] = await db.query(`SELECT j.*, u.name as employer_name FROM jobs j JOIN users u ON j.employer_id = u.id WHERE j.id = ?`, [jobId]);
+    if (jobs.length === 0) return res.status(404).json({ error: 'Vacante no encontrada' });
+
+    const job = jobs[0];
+    const [requirements] = await db.query(`SELECT * FROM job_requirements WHERE job_id = ?`, [jobId]);
+
+    let eligibility = { canApply: false, matchPercentage: 100, failedMandatory: [] };
+
+    if (candidateId) {
+      const [candidateSkills] = await db.query(`SELECT * FROM user_skills WHERE user_id = ?`, [candidateId]);
+
+      if (requirements.length > 0) {
+        let matchedCount = 0;
+        requirements.forEach(reqItem => {
+          const found = candidateSkills.some(s => s.skill_name.toLowerCase() === reqItem.skill_name.toLowerCase());
+          if (found) matchedCount++;
+        });
+
+        const matchPercentage = Math.round((matchedCount / requirements.length) * 100);
+        const canApply = matchPercentage >= 85;
+
+        eligibility = { canApply, matchPercentage, failedMandatory: [] };
+      } else {
+        eligibility = { canApply: true, matchPercentage: 100, failedMandatory: [] };
+      }
+    }
+
+    res.json({ job, requirements, eligibility });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Postulación a empleo
+app.post('/api/jobs/:id/apply', verifyToken, async (req, res) => {
+  if (req.user.role !== 'candidate') return res.status(403).json({ error: 'Solo candidatos' });
+  const jobId = req.params.id;
+  const candidateId = req.user.id;
+
+  try {
+    const [requirements] = await db.query(`SELECT * FROM job_requirements WHERE job_id = ?`, [jobId]);
+    const [candidateSkills] = await db.query(`SELECT * FROM user_skills WHERE user_id = ?`, [candidateId]);
+
+    if (requirements.length > 0) {
+      let matchedCount = 0;
+      requirements.forEach(reqItem => {
+        const found = candidateSkills.some(s => s.skill_name.toLowerCase() === reqItem.skill_name.toLowerCase());
+        if (found) matchedCount++;
+      });
+      const matchPercentage = Math.round((matchedCount / requirements.length) * 100);
+
+      if (matchPercentage < 85) {
+        return res.status(400).json({ error: 'No alcanzas el 85% de compatibilidad requerido para postularte.' });
+      }
+    }
+
+    await db.query(
+      `INSERT INTO applications (job_id, candidate_id, status) VALUES (?, ?, 'pending')`,
+      [jobId, candidateId]
+    );
+
+    res.json({ message: '¡Postulación realizada con éxito!' });
+  } catch (err) {
+    if (err.code === 'ER_DUP_ENTRY') {
+      return res.status(400).json({ error: 'Ya te has postulado a esta vacante.' });
+    }
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Redireccionar cualquier otra ruta no-API al frontend index.html
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
