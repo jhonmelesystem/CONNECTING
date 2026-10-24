@@ -50,12 +50,26 @@
             currentView: 'home'
         };
 
+        let tempProfilePicBase64 = ''; // Variable temporal para la foto seleccionada
+
         // CATÁLOGO DE HABILIDADES PREDEFINIDAS
         const PREDEFINED_SKILLS = [
             'JavaScript', 'Node.js', 'Express', 'MySQL', 'React', 'HTML/CSS',
             'Tailwind CSS', 'Python', 'Atención al Cliente', 'Ventas',
             'Gestión de Proyectos', 'Diseño Gráfico', 'Inglés Avanzado'
         ];
+
+        // CONVERTIR ARCHIVO SELECCIONADO A BASE64
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onloadend = function () {
+                    tempProfilePicBase64 = reader.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
 
         // ACTUALIZAR BARRA DE NAVEGACIÓN
         function updateNav() {
@@ -81,7 +95,6 @@
             }
         }
 
-        // NAVEGACIÓN Y CERRAR SESIÓN
         function navigate(view, params = null) {
             state.currentView = view;
             render(params);
@@ -97,7 +110,6 @@
             navigate('home');
         }
 
-        // CONTROLADOR DE VISTAS
         function render(params = null) {
             updateNav();
             const container = document.getElementById('main-content');
@@ -131,14 +143,12 @@
         // ==================== VISTA: HOME / FEED DE EMPLEOS ====================
         function renderHome(container) {
             container.innerHTML = `
-                <!-- Barra de Búsqueda y Filtros -->
                 <div class="bg-white p-4 rounded-xl shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-center justify-between border border-gray-100">
                     <div class="w-full md:w-1/2 relative">
                         <input type="text" id="searchInput" placeholder="Buscar por puesto o palabra clave..." 
                             class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                         <span class="absolute left-3 top-2.5 text-gray-400">🔍</span>
                     </div>
-                    
                     <div class="w-full md:w-auto flex gap-3">
                         <select id="modalityFilter" class="border rounded-lg px-4 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
                             <option value="all">Todas las modalidades</option>
@@ -161,7 +171,6 @@
                     <p class="text-gray-500 text-center py-8">Cargando vacantes...</p>
                 </div>
             `;
-
             fetchFilteredJobs();
         }
 
@@ -186,7 +195,6 @@
 
                 let html = '';
                 jobs.forEach((job, index) => {
-                    // Anuncio Nativo cada 3 vacantes
                     if (index > 0 && index % 3 === 0) {
                         html += `
                             <div class="ad-container p-4 rounded-xl shadow-sm mb-4 text-center">
@@ -230,7 +238,7 @@
             }
         }
 
-        // ==================== VISTAS DE AUTENTICACIÓN ====================
+        // ==================== AUTENTICACIÓN ====================
         function renderLogin(container) {
             container.innerHTML = `
                 <div class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-sm border border-gray-100 mt-8">
@@ -238,11 +246,11 @@
                     <form onsubmit="handleLogin(event)" class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Correo Electrónico</label>
-                            <input type="email" id="login-email" required class="w-full border rounded-lg px-3 py-2 mt-1 focus:ring-2 focus:ring-blue-500">
+                            <input type="email" id="login-email" required class="w-full border rounded-lg px-3 py-2 mt-1">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-700">Contraseña</label>
-                            <input type="password" id="login-password" required class="w-full border rounded-lg px-3 py-2 mt-1 focus:ring-2 focus:ring-blue-500">
+                            <input type="password" id="login-password" required class="w-full border rounded-lg px-3 py-2 mt-1">
                         </div>
                         <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition">Ingresar</button>
                     </form>
@@ -286,6 +294,7 @@
         }
 
         function renderRegister(container) {
+            tempProfilePicBase64 = ''; // Resetear
             container.innerHTML = `
                 <div class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-sm border border-gray-100 mt-4">
                     <h2 class="text-xl font-bold mb-4 text-center">Crear Cuenta</h2>
@@ -310,8 +319,8 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700">URL Foto de Perfil (Opcional)</label>
-                            <input type="url" id="reg-pic" placeholder="https://..." class="w-full border rounded-lg px-3 py-1.5 mt-1">
+                            <label class="block text-sm font-medium text-gray-700">Foto de Perfil (Seleccionar Archivo)</label>
+                            <input type="file" id="reg-pic-file" accept="image/*" onchange="handleImageUpload(event)" class="w-full border rounded-lg px-3 py-1.5 mt-1 text-sm bg-white">
                         </div>
                         <button type="submit" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-medium hover:bg-emerald-700 transition">Registrarse</button>
                     </form>
@@ -325,13 +334,18 @@
             const email = document.getElementById('reg-email').value;
             const password = document.getElementById('reg-password').value;
             const role = document.getElementById('reg-role').value;
-            const profile_picture = document.getElementById('reg-pic').value;
 
             try {
                 const res = await fetch(`${API_URL}/register`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, password, role, profile_picture })
+                    body: JSON.stringify({ 
+                        name, 
+                        email, 
+                        password, 
+                        role, 
+                        profile_picture: tempProfilePicBase64 
+                    })
                 });
                 const data = await res.json();
 
@@ -346,7 +360,7 @@
             }
         }
 
-        // ==================== VISTA: GESTIÓN DE MIS VACANTES (EMPLEADOR) ====================
+        // ==================== EMPLEADOR: MIS VACANTES ====================
         async function renderEmployerJobs(container) {
             container.innerHTML = `
                 <div class="flex justify-between items-center mb-6">
@@ -480,7 +494,7 @@
             }
         }
 
-        // PERFIL DE CANDIDATO CON SELECCIÓN DE HABILIDADES PREDEFINIDAS
+        // ==================== PERFIL DE CANDIDATO ====================
         function renderCandidateProfile(container) {
             let skillOptions = PREDEFINED_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
 
@@ -491,10 +505,10 @@
                     <div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
                         <h3 class="font-semibold mb-2">Añadir Habilidad Predefinida</h3>
                         <div class="flex gap-2">
-                            <select id="skill-select" class="border rounded-lg px-3 py-2 bg-white flex-grow">
+                            <select id="skill-select" class="border rounded-lg px-3 py-2 bg-white flex-grow text-sm">
                                 ${skillOptions}
                             </select>
-                            <input type="number" id="skill-level" min="1" max="5" value="3" title="Nivel del 1 al 5" class="w-16 border rounded-lg px-2 text-center">
+                            <input type="number" id="skill-level" min="1" max="5" value="3" title="Nivel del 1 al 5" class="w-16 border rounded-lg px-2 text-center text-sm">
                             <button onclick="addSkill()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">Agregar</button>
                         </div>
                     </div>
@@ -527,7 +541,6 @@
             }
         }
 
-        // INICIALIZACIÓN AL CARGAR LA PÁGINA
         document.addEventListener('DOMContentLoaded', () => {
             render();
         });
