@@ -3,54 +3,88 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CONNECTING - Conectando Talento y Oportunidades</title>
+    <title>CONNECTING - Plataforma de Empleos</title>
     <!-- Tailwind CSS CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        .ad-container { background: #f3f4f6; border: 2px dashed #d1d5db; }
+        .ad-container {
+            background: linear-gradient(135deg, #f9fafb 0%, #f3f4f6 100%);
+            border: 1px dashed #cbd5e1;
+        }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-900 font-sans antialiased min-h-screen flex flex-col justify-between">
+<body class="bg-gray-100 text-gray-800 font-sans min-h-screen flex flex-col">
 
-    <!-- HEADER / NAVEGACIÓN RESPONSIVE -->
-    <header class="bg-blue-900 text-white shadow-md sticky top-0 z-50">
-        <div class="max-w-4xl mx-auto px-4 py-3 flex justify-between items-center">
-            <h1 class="text-xl font-bold tracking-wide cursor-pointer" onclick="navigate('home')">🔗 CONNECTING</h1>
-            <div id="nav-actions" class="flex gap-3 text-sm">
-                <!-- Dinámico según sesión -->
+    <!-- NAVEGACIÓN PRINCIPAL -->
+    <header class="bg-gray-900 text-white shadow-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex justify-between items-center">
+            <h1 onclick="navigate('home')" class="text-xl font-bold tracking-wide cursor-pointer hover:text-blue-400 transition flex items-center gap-2">
+                ⚡ CONNECTING
+            </h1>
+            <div id="nav-actions" class="flex items-center gap-3 text-sm">
+                <!-- Se llena dinámicamente con JS -->
             </div>
         </div>
     </header>
 
     <!-- CONTENEDOR PRINCIPAL -->
-    <main class="max-w-4xl mx-auto px-4 py-6 w-full flex-grow" id="main-content">
-    <!-- Aquí se dibuja todo automáticamente -->
+    <main id="main-content" class="max-w-6xl mx-auto px-4 py-8 flex-grow w-full">
+        <!-- Vistas renderizadas vía JS -->
     </main>
 
-    <!-- BANNER PUBLICITARIO FIJO INFERIOR (ESTATEGIA DE ANUNCIOS UX-FRIENDLY) -->
-    <div class="bg-gray-200 border-t border-gray-300 p-2 text-center text-xs text-gray-600">
-        <span class="bg-gray-300 text-[10px] px-1 rounded uppercase font-bold text-gray-500">Publicidad</span>
-        Curso recomendado: Aprende desarrollo web y mejora tu perfil hoy.
-    </div>
+    <!-- PIE DE PÁGINA -->
+    <footer class="bg-gray-900 text-gray-400 text-center py-4 text-xs mt-auto">
+        &copy; 2026 CONNECTING. Todos los derechos reservados.
+    </footer>
 
-    <!-- FOOTER -->
-    <footer class="bg-white border-t border-gray-200 text-center py-4 text-xs text-gray-500">
-        &copy; 2026 CONNECTING. Plataforma de empleo con Smart Screening y monetización inteligente.
-    <!-- SCRIPT DE LÓGICA DE CLIENTE -->
     <script>
-        const API_URL = 'https://connecting-production-df4b.up.railway.app/api';
-        let state = {
+        const API_URL = '/api';
+
+        // ESTADO GLOBAL DE LA APLICACIÓN
+        const state = {
             token: localStorage.getItem('token') || null,
             role: localStorage.getItem('role') || null,
             name: localStorage.getItem('name') || null,
-            currentView: 'home',
-            activeJobId: null
+            profile_picture: localStorage.getItem('profile_picture') || '',
+            resume_url: localStorage.getItem('resume_url') || '',
+            currentView: 'home'
         };
 
-        function navigate(view, jobId = null) {
+        // CATÁLOGO DE HABILIDADES PREDEFINIDAS
+        const PREDEFINED_SKILLS = [
+            'JavaScript', 'Node.js', 'Express', 'MySQL', 'React', 'HTML/CSS',
+            'Tailwind CSS', 'Python', 'Atención al Cliente', 'Ventas',
+            'Gestión de Proyectos', 'Diseño Gráfico', 'Inglés Avanzado'
+        ];
+
+        // ACTUALIZAR BARRA DE NAVEGACIÓN
+        function updateNav() {
+            const nav = document.getElementById('nav-actions');
+            if (!nav) return;
+
+            if (state.token) {
+                nav.innerHTML = `
+                    <div class="flex items-center gap-2 mr-2">
+                        ${state.profile_picture ? `<img src="${state.profile_picture}" class="w-7 h-7 rounded-full object-cover border border-gray-600">` : '<div class="w-7 h-7 rounded-full bg-gray-700 flex items-center justify-center text-xs font-bold">👤</div>'}
+                        <span class="font-medium hidden sm:inline text-gray-200">Hola, ${state.name || 'Usuario'}</span>
+                    </div>
+                    ${state.role === 'candidate' ? '<button onclick="navigate(\'candidate-profile\')" class="bg-blue-800 px-3 py-1.5 rounded text-white font-medium hover:bg-blue-700 transition">Mi Perfil</button>' : ''}
+                    ${state.role === 'employer' ? '<button onclick="navigate(\'my-jobs\')" class="bg-emerald-600 px-3 py-1.5 rounded text-white font-medium hover:bg-emerald-500 transition">Mis Publicaciones</button>' : ''}
+                    ${state.role === 'employer' ? '<button onclick="navigate(\'create-job\')" class="bg-blue-600 px-3 py-1.5 rounded text-white font-medium hover:bg-blue-500 transition">+ Publicar</button>' : ''}
+                    <button onclick="logout()" class="bg-red-600 px-3 py-1.5 rounded text-white font-medium hover:bg-red-500 transition">Salir</button>
+                `;
+            } else {
+                nav.innerHTML = `
+                    <button onclick="navigate('login')" class="bg-blue-800 px-3.5 py-1.5 rounded text-white font-medium hover:bg-blue-700 transition">Entrar</button>
+                    <button onclick="navigate('register')" class="bg-emerald-600 px-3.5 py-1.5 rounded text-white font-medium hover:bg-emerald-500 transition">Registrarse</button>
+                `;
+            }
+        }
+
+        // NAVEGACIÓN Y CERRAR SESIÓN
+        function navigate(view, params = null) {
             state.currentView = view;
-            if (jobId) state.activeJobId = jobId;
-            render();
+            render(params);
         }
 
         function logout() {
@@ -58,326 +92,168 @@
             state.token = null;
             state.role = null;
             state.name = null;
+            state.profile_picture = '';
+            state.resume_url = '';
             navigate('home');
         }
 
-        // Renderizado general de la interfaz según estado
-        async function render() {
+        // CONTROLADOR DE VISTAS
+        function render(params = null) {
             updateNav();
-            const main = document.getElementById('main-content');
-            main.innerHTML = '<div class="text-center py-10 text-gray-500">Cargando...</div>';
+            const container = document.getElementById('main-content');
+            if (!container) return;
+            container.innerHTML = '';
 
-            if (state.currentView === 'home') {
-                await renderHome(main);
-            } else if (state.currentView === 'login') {
-                renderLogin(main);
-            } else if (state.currentView === 'register') {
-                renderRegister(main);
-            } else if (state.currentView === 'job-detail') {
-                await renderJobDetail(main, state.activeJobId);
-            } else if (state.currentView === 'create-job') {
-                renderCreateJob(main);
-            } else if (state.currentView === 'candidate-profile') {
-                await renderCandidateProfile(main);
+            switch (state.currentView) {
+                case 'home':
+                    renderHome(container);
+                    break;
+                case 'login':
+                    renderLogin(container);
+                    break;
+                case 'register':
+                    renderRegister(container);
+                    break;
+                case 'candidate-profile':
+                    renderCandidateProfile(container);
+                    break;
+                case 'my-jobs':
+                    renderEmployerJobs(container);
+                    break;
+                case 'create-job':
+                    renderCreateJob(container);
+                    break;
+                default:
+                    renderHome(container);
             }
         }
 
-        function updateNav() {
-            const nav = document.getElementById('nav-actions');
-            if (state.token) {
-                nav.innerHTML = `
-                    <span class="self-center font-medium">Hola, ${state.name || 'Usuario'}</span>
-                    ${state.role === 'candidate' ? '<button onclick="navigate(\'candidate-profile\')" class="bg-blue-800 px-3 py-1 rounded hover:bg-blue-700">Mi Perfil</button>' : ''}
-                    ${state.role === 'employer' ? '<button onclick="navigate(\'create-job\')" class="bg-emerald-600 px-3 py-1 rounded hover:bg-emerald-500">Publicar Vacante</button>' : ''}
-                    <button onclick="logout()" class="bg-red-600 px-3 py-1 rounded hover:bg-red-500">Salir</button>
-                `;
-            } else {
-                nav.innerHTML = `
-                    <button onclick="navigate('login')" class="bg-blue-800 px-3 py-1 rounded hover:bg-blue-700">Entrar</button>
-                    <button onclick="navigate('register')" class="bg-emerald-600 px-3 py-1 rounded hover:bg-emerald-500">Registrarse</button>
-                `;
-            }
-        }
-
-        // VISTA: HOME / LISTADO DE EMPLEOS
-        async function renderHome(container) {
-            try {
-                const res = await fetch(`${API_URL}/jobs`);
-                const jobs = await res.json();
-
-                let html = `
-                    <div class="mb-6">
-                        <h2 class="text-2xl font-bold text-gray-800">Empleos Disponibles</h2>
-                        <p class="text-sm text-gray-600">Filtro inteligente automático integrado para optimizar tu tiempo.</p>
-                    </div>
-                `;
-
-                if (jobs.length === 0) {
-                    html += `<p class="text-gray-500 text-center py-10">No hay vacantes publicadas aún.</p>`;
-                } else {
-                    jobs.forEach((job, index) => {
-                        // Inserción de Anuncio Nativo cada 3 vacantes (Estrategia de Monetización)
-                        if (index > 0 && index % 3 === 0) {
-                            html += `
-                                <div class="ad-container p-4 rounded-lg shadow-sm mb-4 text-center">
-                                    <span class="text-[10px] bg-gray-400 text-white px-2 py-0.5 rounded font-bold uppercase">Patrocinado</span>
-                                    <p class="text-sm font-semibold text-gray-700 mt-1">🚀 ¡Acelera tu carrera con equipos de alta gama en Cinets!</p>
-                                    <a href="#" class="text-xs text-blue-600 underline font-medium">Ver accesorios y tecnología</a>
-                                </div>
-                            `;
-                        }
-
-                        html += `
-                            <div class="bg-white p-4 rounded-lg shadow-sm border border-gray-200 mb-4 flex flex-col gap-2">
-                                <div class="flex justify-between items-start">
-                                    <div>
-                                        <h3 class="font-bold text-lg text-blue-900 cursor-pointer" onclick="navigate('job-detail', ${job.id})">${job.title}</h3>
-                                        <p class="text-xs text-gray-500">${job.employer_name} • 📍 ${job.location}</p>
-                                    </div>
-                                    <span class="bg-emerald-100 text-emerald-800 text-xs px-2 py-1 font-semibold rounded">${job.salary_range || 'A convenir'}</span>
-                                </div>
-                                <p class="text-sm text-gray-600 line-clamp-2">${job.description}</p>
-                                <button onclick="navigate('job-detail', ${job.id})" class="mt-2 bg-blue-600 text-white text-sm py-2 rounded font-medium hover:bg-blue-700">Ver Oferta y Requisitos</button>
-                            </div>
-                        `;
-                    });
-                }
-                container.innerHTML = html;
-            } catch (err) {
-                container.innerHTML = `<p class="text-red-500 text-center">Error al cargar las vacantes. Asegúrate de que el servidor backend esté encendido.</p>`;
-            }
-        }
-
-        // VISTA: DETALLE DE VACANTE + SMART SCREENING
-        async function renderJobDetail(container, jobId) {
-            if (!state.token) {
-                container.innerHTML = `
-                    <div class="text-center py-12">
-                        <p class="text-lg font-medium text-gray-700 mb-4">Debes iniciar sesión para ver los detalles de esta oferta y evaluar tus requisitos.</p>
-                        <button onclick="navigate('login')" class="bg-blue-600 text-white px-4 py-2 rounded">Ir al Login</button>
-                    </div>
-                `;
-                return;
-            }
-
-            try {
-                const res = await fetch(`${API_URL}/jobs/${jobId}`, {
-                    headers: { 'Authorization': `Bearer ${state.token}` }
-                });
-                const data = await res.json();
-                const { job, requirements, eligibility, recommendations } = data;
-
-                let html = `
-                    <button onclick="navigate('home')" class="text-sm text-blue-600 mb-4 font-medium">&larr; Volver a empleos</button>
-                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6">
-                        <h2 class="text-2xl font-bold text-gray-900 mb-1">${job.title}</h2>
-                        <p class="text-sm text-gray-500 mb-4">📍 ${job.location} | 💰 ${job.salary_range}</p>
-                        <p class="text-sm text-gray-700 mb-6">${job.description}</p>
-                        
-                        <h3 class="font-bold text-md text-gray-800 mb-2">Requisitos de la Vacante:</h3>
-                        <ul class="space-y-2 mb-6">
-                `;
-
-                requirements.forEach(req => {
-                    html += `
-                        <li class="text-sm flex justify-between items-center bg-gray-50 p-2 rounded border border-gray-100">
-                            <span>🔹 <strong>${req.skill_name}</strong> (Nivel mín: ${req.level_required})</span>
-                            <span class="text-xs px-2 py-0.5 rounded ${req.is_mandatory ? 'bg-red-100 text-red-700' : 'bg-blue-100 text-blue-700'}">
-                                ${req.is_mandatory ? 'Obligatorio' : 'Deseable'}
-                            </span>
-                        </li>
-                    `;
-                });
-
-                html += `</ul>`;
-
-                // Bloque Inteligente de Smart Screening
-                if (eligibility.canApply) {
-                    html += `
-                        <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-lg mb-4 text-center">
-                            <p class="text-emerald-800 font-bold">🎉 ¡Cumples con el 100% de los requisitos obligatorios!</p>
-                            <p class="text-xs text-emerald-600 mb-3">Compatibilidad con el perfil: ${eligibility.matchPercentage}%</p>
-                            <button onclick="applyToJob(${job.id})" class="w-full bg-emerald-600 text-white font-bold py-2.5 rounded hover:bg-emerald-500">Postularme en 1 Clic</button>
-                        </div>
-                    `;
-                } else {
-                    html += `
-                        <div class="bg-amber-50 border border-amber-200 p-4 rounded-lg mb-4">
-                            <p class="text-amber-800 font-bold mb-1">⚠️ No puedes postularte a esta vacante</p>
-                            <p class="text-xs text-amber-700 mb-2">Te falta cumplir con el siguiente requisito obligatorio:</p>
-                            <ul class="list-disc pl-5 text-xs text-amber-900 mb-3">
-                    `;
-                    eligibility.failedMandatory.forEach(fail => {
-                        html += `<li>Requiere <strong>${fail.skill}</strong> (Nivel requerido: ${fail.required_level}, Tu nivel: ${fail.current_level})</li>`;
-                    });
-                    html += `
-                            </ul>
-                            <div class="bg-white p-3 rounded border border-amber-100 text-center">
-                                <p class="text-xs font-bold text-gray-700 mb-2">💡 Vacantes alternativas recomendadas para ti:</p>
-                    `;
-                    recommendations.forEach(rec => {
-                        html += `<button onclick="navigate('job-detail', ${rec.id})" class="block w-full text-xs text-blue-600 underline py-1">${rec.title} (${rec.location})</button>`;
-                    });
-                    html += `
-                            </div>
-                        </div>
-                    `;
-                }
-
-                html += `</div>`;
-                container.innerHTML = html;
-            } catch (err) {
-                container.innerHTML = `<p class="text-red-500 text-center">Error al cargar detalle.</p>`;
-            }
-        }
-
-        async function applyToJob(jobId) {
-            try {
-                const res = await fetch(`${API_URL}/jobs/${jobId}/apply`, {
-                    method: 'POST',
-                    headers: { 'Authorization': `Bearer ${state.token}` }
-                });
-                const data = await res.json();
-                if (res.ok) {
-                    alert(data.message);
-                    navigate('home');
-                } else {
-                    alert(data.error);
-                }
-            } catch (err) {
-                alert('Error al postularse.');
-            }
-        }
-
-        // VISTA: PERFIL Y HABILIDADES DEL CANDIDATO
-        async function renderCandidateProfile(container) {
-            try {
-                const res = await fetch(`${API_URL}/skills`, {
-                    headers: { 'Authorization': `Bearer ${state.token}` }
-                });
-                const skills = await res.json();
-
-                let html = `
-                    <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 max-w-lg mx-auto">
-                        <h2 class="text-xl font-bold text-gray-800 mb-4">Mi Perfil y Habilidades</h2>
-                        <p class="text-sm text-gray-600 mb-4">Registra tus habilidades para que el filtro automático (*Smart Screening*) evalúe tus postulaciones correctamente.</p>
-                        
-                        <form onsubmit="addSkill(event)" class="flex flex-col gap-3 mb-6">
-                            <input type="text" id="skill_name" placeholder="Ej. JavaScript, Inglés, Python..." required class="border p-2 rounded text-sm">
-                            <select id="level" class="border p-2 rounded text-sm">
-                                <option value="1">1 - Básico</option>
-                                <option value="2">2 - Intermedio</option>
-                                <option value="3">3 - Avanzado</option>
-                            </select>
-                            <button type="submit" class="bg-blue-600 text-white py-2 rounded text-sm font-medium">Agregar Habilidad</button>
-                        </form>
-
-                        <h3 class="font-bold text-md text-gray-700 mb-2">Tus Habilidades Registradas:</h3>
-                        <ul class="space-y-2">
-                `;
-
-                skills.forEach(s => {
-                    const levelName = s.level === 1 ? 'Básico' : s.level === 2 ? 'Intermedio' : 'Avanzado';
-                    html += `<li class="bg-gray-50 p-2 rounded border text-sm flex justify-between"><span>${s.skill_name}</span><span class="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">${levelName}</span></li>`;
-                });
-
-                html += `</ul></div>`;
-                container.innerHTML = html;
-            } catch (err) {
-                container.innerHTML = `<p class="text-red-500">Error al cargar perfil.</p>`;
-            }
-        }
-
-        async function addSkill(e) {
-            e.preventDefault();
-            const skill_name = document.getElementById('skill_name').value;
-            const level = parseInt(document.getElementById('level').value);
-
-            const res = await fetch(`${API_URL}/skills`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.token}` },
-                body: JSON.stringify({ skill_name, level })
-            });
-
-            if (res.ok) {
-                renderCandidateProfile(document.getElementById('main-content'));
-            } else {
-                alert('Error al agregar habilidad');
-            }
-        }
-
-        // VISTA: CREAR VACANTE (EMPLEADOR)
-        function renderCreateJob(container) {
+        // ==================== VISTA: HOME / FEED DE EMPLEOS ====================
+        function renderHome(container) {
             container.innerHTML = `
-                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 max-w-lg mx-auto">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4">Publicar Nueva Vacante</h2>
-                    <form onsubmit="createJob(event)" class="flex flex-col gap-3">
-                        <input type="text" id="title" placeholder="Título del puesto (Ej. Desarrollador Web)" required class="border p-2 rounded text-sm">
-                        <textarea id="description" placeholder="Descripción de la vacante..." required class="border p-2 rounded text-sm h-24"></textarea>
-                        <input type="text" id="location" placeholder="Ubicación (Ej. Santo Domingo / Híbrido)" required class="border p-2 rounded text-sm">
-                        <input type="text" id="salary_range" placeholder="Rango Salarial (Ej. RD$ 50,000 - 70,000)" required class="border p-2 rounded text-sm">
-                        
-                        <hr class="my-2">
-                        <h3 class="font-bold text-sm text-gray-700">Requisito Obligatorio de Filtro (Smart Screening):</h3>
-                        <input type="text" id="req_skill" placeholder="Habilidad requerida (Ej. JavaScript)" required class="border p-2 rounded text-sm">
-                        <select id="req_level" class="border p-2 rounded text-sm">
-                            <option value="1">Nivel mínimo: 1 - Básico</option>
-                            <option value="2">Nivel mínimo: 2 - Intermedio</option>
-                            <option value="3">Nivel mínimo: 3 - Avanzado</option>
+                <!-- Barra de Búsqueda y Filtros -->
+                <div class="bg-white p-4 rounded-xl shadow-sm mb-6 flex flex-col md:flex-row gap-4 items-center justify-between border border-gray-100">
+                    <div class="w-full md:w-1/2 relative">
+                        <input type="text" id="searchInput" placeholder="Buscar por puesto o palabra clave..." 
+                            class="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                        <span class="absolute left-3 top-2.5 text-gray-400">🔍</span>
+                    </div>
+                    
+                    <div class="w-full md:w-auto flex gap-3">
+                        <select id="modalityFilter" class="border rounded-lg px-4 py-2 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm">
+                            <option value="all">Todas las modalidades</option>
+                            <option value="remoto">🟢 Remoto</option>
+                            <option value="presencial">🏢 Presencial</option>
+                            <option value="hibrido">🔄 Híbrido</option>
                         </select>
+                        <button onclick="fetchFilteredJobs()" class="bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition">
+                            Filtrar
+                        </button>
+                    </div>
+                </div>
 
-                        <button type="submit" class="mt-2 bg-emerald-600 text-white py-2 rounded text-sm font-medium hover:bg-emerald-500">Publicar Vacante</button>
-                    </form>
+                <div class="mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Empleos Disponibles</h2>
+                    <p class="text-sm text-gray-600">Smart Screening integrado para postulaciones rápidas y efectivas.</p>
+                </div>
+
+                <div id="jobs-list" class="space-y-4">
+                    <p class="text-gray-500 text-center py-8">Cargando vacantes...</p>
                 </div>
             `;
+
+            fetchFilteredJobs();
         }
 
-        async function createJob(e) {
-            e.preventDefault();
-            const title = document.getElementById('title').value;
-            const description = document.getElementById('description').value;
-            const location = document.getElementById('location').value;
-            const salary_range = document.getElementById('salary_range').value;
-            
-            const requirements = [{
-                skill_name: document.getElementById('req_skill').value,
-                level_required: parseInt(document.getElementById('req_level').value),
-                is_mandatory: true
-            }];
+        async function fetchFilteredJobs() {
+            const searchInput = document.getElementById('searchInput');
+            const modalityFilter = document.getElementById('modalityFilter');
+            const listContainer = document.getElementById('jobs-list');
 
-            const res = await fetch(`${API_URL}/jobs`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${state.token}` },
-                body: JSON.stringify({ title, description, location, salary_range, requirements })
-            });
+            if (!listContainer) return;
 
-            if (res.ok) {
-                alert('Vacante publicada con éxito');
-                navigate('home');
-            } else {
-                alert('Error al publicar vacante');
+            const search = searchInput ? searchInput.value : '';
+            const modality = modalityFilter ? modalityFilter.value : 'all';
+
+            try {
+                const res = await fetch(`${API_URL}/jobs?search=${encodeURIComponent(search)}&modality=${modality}`);
+                const jobs = await res.json();
+
+                if (!jobs || jobs.length === 0) {
+                    listContainer.innerHTML = `<p class="text-gray-500 text-center py-10 bg-white rounded-xl shadow-sm">No se encontraron vacantes disponibles.</p>`;
+                    return;
+                }
+
+                let html = '';
+                jobs.forEach((job, index) => {
+                    // Anuncio Nativo cada 3 vacantes
+                    if (index > 0 && index % 3 === 0) {
+                        html += `
+                            <div class="ad-container p-4 rounded-xl shadow-sm mb-4 text-center">
+                                <span class="text-[10px] bg-gray-500 text-white px-2 py-0.5 rounded font-bold uppercase">Patrocinado</span>
+                                <p class="text-sm font-semibold text-gray-800 mt-1">🚀 ¡Acelera tu carrera con tecnología de vanguardia!</p>
+                                <a href="#" class="text-xs text-blue-600 underline font-medium hover:text-blue-800">Conoce nuestras ofertas exclusivas</a>
+                            </div>
+                        `;
+                    }
+
+                    let badge = '<span class="bg-blue-100 text-blue-800 text-xs px-2.5 py-1 rounded-full font-semibold">🏢 Presencial</span>';
+                    if (job.modality === 'remoto') badge = '<span class="bg-green-100 text-green-800 text-xs px-2.5 py-1 rounded-full font-semibold">💻 Remoto</span>';
+                    if (job.modality === 'hibrido') badge = '<span class="bg-purple-100 text-purple-800 text-xs px-2.5 py-1 rounded-full font-semibold">🔄 Híbrido</span>';
+
+                    html += `
+                        <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
+                            <div class="flex justify-between items-start">
+                                <div class="flex items-center gap-3">
+                                    ${job.employer_logo ? `<img src="${job.employer_logo}" class="w-10 h-10 rounded-full object-cover">` : '<div class="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center font-bold text-gray-500">🏢</div>'}
+                                    <div>
+                                        <h3 class="text-lg font-bold text-gray-900">${job.title}</h3>
+                                        <p class="text-sm text-gray-600">${job.employer_name || 'Empresa'} • 📍 ${job.location || 'No especificada'}</p>
+                                    </div>
+                                </div>
+                                <div>${badge}</div>
+                            </div>
+                            <p class="text-gray-700 mt-3 text-sm line-clamp-2">${job.description}</p>
+                            <div class="mt-4 flex justify-between items-center pt-3 border-t border-gray-50">
+                                <span class="text-sm font-semibold text-emerald-600">${job.salary_range || 'Salario a convenir'}</span>
+                                <button onclick="alert('Inicia sesión para ver detalles y aplicar')" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
+                                    Ver Detalle
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                listContainer.innerHTML = html;
+            } catch (error) {
+                console.error('Error al cargar vacantes:', error);
+                listContainer.innerHTML = `<p class="text-red-500 text-center py-8">No se pudieron cargar las vacantes.</p>`;
             }
         }
 
-        // VISTAS DE AUTENTICACIÓN (LOGIN Y REGISTRO)
+        // ==================== VISTAS DE AUTENTICACIÓN ====================
         function renderLogin(container) {
             container.innerHTML = `
-                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 max-w-sm mx-auto">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">Iniciar Sesión</h2>
-                    <form onsubmit="handleLogin(event)" class="flex flex-col gap-3">
-                        <input type="email" id="email" placeholder="Correo electrónico" required class="border p-2 rounded text-sm">
-                        <input type="password" id="password" placeholder="Contraseña" required class="border p-2 rounded text-sm">
-                        <button type="submit" class="bg-blue-600 text-white py-2 rounded text-sm font-medium">Entrar</button>
+                <div class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-sm border border-gray-100 mt-8">
+                    <h2 class="text-xl font-bold mb-4 text-center">Iniciar Sesión</h2>
+                    <form onsubmit="handleLogin(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Correo Electrónico</label>
+                            <input type="email" id="login-email" required class="w-full border rounded-lg px-3 py-2 mt-1 focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Contraseña</label>
+                            <input type="password" id="login-password" required class="w-full border rounded-lg px-3 py-2 mt-1 focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition">Ingresar</button>
                     </form>
-                    <p class="text-xs text-center mt-4">¿No tienes cuenta? <a href="#" onclick="navigate('register')" class="text-blue-600 underline">Regístrate</a></p>
                 </div>
             `;
         }
 
         async function handleLogin(e) {
             e.preventDefault();
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
 
             try {
                 const res = await fetch(`${API_URL}/login`, {
@@ -386,68 +262,275 @@
                     body: JSON.stringify({ email, password })
                 });
                 const data = await res.json();
+
                 if (res.ok) {
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('role', data.role);
                     localStorage.setItem('name', data.name);
+                    localStorage.setItem('profile_picture', data.profile_picture || '');
+                    localStorage.setItem('resume_url', data.resume_url || '');
+
                     state.token = data.token;
                     state.role = data.role;
                     state.name = data.name;
+                    state.profile_picture = data.profile_picture || '';
+                    state.resume_url = data.resume_url || '';
+
                     navigate('home');
                 } else {
                     alert(data.error);
                 }
             } catch (err) {
-                alert('Error de conexión con el servidor.');
+                console.error(err);
             }
         }
 
         function renderRegister(container) {
             container.innerHTML = `
-                <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 max-w-sm mx-auto">
-                    <h2 class="text-xl font-bold text-gray-800 mb-4 text-center">Registro de Usuario</h2>
-                    <form onsubmit="handleRegister(event)" class="flex flex-col gap-3">
-                        <input type="text" id="name" placeholder="Nombre completo" required class="border p-2 rounded text-sm">
-                        <input type="email" id="email" placeholder="Correo electrónico" required class="border p-2 rounded text-sm">
-                        <input type="password" id="password" placeholder="Contraseña" required class="border p-2 rounded text-sm">
-                        <select id="role" class="border p-2 rounded text-sm">
-                            <option value="candidate">Buscador de Empleo (Candidato)</option>
-                            <option value="employer">Empleador / Reclutador</option>
-                        </select>
-                        <button type="submit" class="bg-emerald-600 text-white py-2 rounded text-sm font-medium">Registrarse</button>
+                <div class="max-w-md mx-auto bg-white p-6 rounded-xl shadow-sm border border-gray-100 mt-4">
+                    <h2 class="text-xl font-bold mb-4 text-center">Crear Cuenta</h2>
+                    <form onsubmit="handleRegister(event)" class="space-y-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Nombre Completo / Empresa</label>
+                            <input type="text" id="reg-name" required class="w-full border rounded-lg px-3 py-1.5 mt-1">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Correo Electrónico</label>
+                            <input type="email" id="reg-email" required class="w-full border rounded-lg px-3 py-1.5 mt-1">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Contraseña</label>
+                            <input type="password" id="reg-password" required class="w-full border rounded-lg px-3 py-1.5 mt-1">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Tipo de Cuenta</label>
+                            <select id="reg-role" class="w-full border rounded-lg px-3 py-1.5 mt-1 bg-white">
+                                <option value="candidate">Busco Empleo (Candidato)</option>
+                                <option value="employer">Deseo Publicar Empleos (Empleador)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">URL Foto de Perfil (Opcional)</label>
+                            <input type="url" id="reg-pic" placeholder="https://..." class="w-full border rounded-lg px-3 py-1.5 mt-1">
+                        </div>
+                        <button type="submit" class="w-full bg-emerald-600 text-white py-2 rounded-lg font-medium hover:bg-emerald-700 transition">Registrarse</button>
                     </form>
-                    <p class="text-xs text-center mt-4">¿Ya tienes cuenta? <a href="#" onclick="navigate('login')" class="text-blue-600 underline">Inicia Sesión</a></p>
                 </div>
             `;
         }
 
         async function handleRegister(e) {
             e.preventDefault();
-            const name = document.getElementById('name').value;
-            const email = document.getElementById('email').value;
-            const password = document.getElementById('password').value;
-            const role = document.getElementById('role').value;
+            const name = document.getElementById('reg-name').value;
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+            const role = document.getElementById('reg-role').value;
+            const profile_picture = document.getElementById('reg-pic').value;
 
             try {
                 const res = await fetch(`${API_URL}/register`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email, password, role })
+                    body: JSON.stringify({ name, email, password, role, profile_picture })
                 });
                 const data = await res.json();
+
                 if (res.ok) {
-                    alert('Registro exitoso. Ahora puedes iniciar sesión.');
+                    alert('¡Registro exitoso! Ahora puedes iniciar sesión.');
                     navigate('login');
                 } else {
                     alert(data.error);
                 }
             } catch (err) {
-                alert('Error de conexión.');
+                console.error(err);
             }
         }
 
-        // Inicializar app al cargar la página
-        render();
+        // ==================== VISTA: GESTIÓN DE MIS VACANTES (EMPLEADOR) ====================
+        async function renderEmployerJobs(container) {
+            container.innerHTML = `
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-2xl font-bold text-gray-800">Mis Publicaciones</h2>
+                    <button onclick="navigate('create-job')" class="bg-blue-600 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-700">+ Nueva Vacante</button>
+                </div>
+                <div id="employer-jobs-list" class="space-y-4">
+                    <p class="text-gray-500 text-center py-8">Cargando tus vacantes...</p>
+                </div>
+            `;
+
+            try {
+                const res = await fetch(`${API_URL}/employer/jobs`, {
+                    headers: { 'Authorization': `Bearer ${state.token}` }
+                });
+                const jobs = await res.json();
+
+                const listContainer = document.getElementById('employer-jobs-list');
+                if (!jobs || jobs.length === 0) {
+                    listContainer.innerHTML = `<p class="text-gray-500 text-center py-8 bg-white rounded-xl">Aún no has publicado vacantes.</p>`;
+                    return;
+                }
+
+                let html = '';
+                jobs.forEach(job => {
+                    html += `
+                        <div class="bg-white p-5 rounded-xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div>
+                                <h3 class="text-lg font-bold text-gray-900">${job.title}</h3>
+                                <p class="text-sm text-gray-600">Modalidad: <span class="capitalize font-medium">${job.modality}</span> • Ubicación: ${job.location || 'N/A'}</p>
+                            </div>
+                            <div class="flex gap-2">
+                                <button onclick="deleteJob(${job.id})" class="bg-red-100 text-red-600 px-3 py-1.5 rounded-lg text-sm font-semibold hover:bg-red-200">
+                                    Eliminar
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                });
+                listContainer.innerHTML = html;
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        async function deleteJob(jobId) {
+            if (!confirm('¿Deseas eliminar esta vacante?')) return;
+
+            try {
+                const res = await fetch(`${API_URL}/jobs/${jobId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${state.token}` }
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(data.message);
+                    renderEmployerJobs(document.getElementById('main-content'));
+                } else {
+                    alert(data.error);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // ==================== CREAR VACANTE ====================
+        function renderCreateJob(container) {
+            container.innerHTML = `
+                <div class="max-w-2xl mx-auto bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h2 class="text-xl font-bold mb-4">Publicar Nueva Vacante</h2>
+                    <form onsubmit="handleCreateJob(event)" class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Título del Puesto</label>
+                            <input type="text" id="job-title" required class="w-full border rounded-lg px-3 py-2 mt-1">
+                        </div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Modalidad</label>
+                                <select id="job-modality" class="w-full border rounded-lg px-3 py-2 mt-1 bg-white">
+                                    <option value="presencial">Presencial</option>
+                                    <option value="remoto">Remoto</option>
+                                    <option value="hibrido">Híbrido</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700">Ubicación</label>
+                                <input type="text" id="job-location" placeholder="Ej: Santo Domingo, RD" class="w-full border rounded-lg px-3 py-2 mt-1">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Rango Salarial</label>
+                            <input type="text" id="job-salary" placeholder="Ej: $45,000 - $60,000 DOP" class="w-full border rounded-lg px-3 py-2 mt-1">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700">Descripción del Puesto</label>
+                            <textarea id="job-desc" rows="4" required class="w-full border rounded-lg px-3 py-2 mt-1"></textarea>
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg font-medium hover:bg-blue-700 transition">Publicar Vacante</button>
+                    </form>
+                </div>
+            `;
+        }
+
+        async function handleCreateJob(e) {
+            e.preventDefault();
+            const title = document.getElementById('job-title').value;
+            const modality = document.getElementById('job-modality').value;
+            const location = document.getElementById('job-location').value;
+            const salary_range = document.getElementById('job-salary').value;
+            const description = document.getElementById('job-desc').value;
+
+            try {
+                const res = await fetch(`${API_URL}/jobs`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${state.token}`
+                    },
+                    body: JSON.stringify({ title, modality, location, salary_range, description })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    alert('¡Vacante publicada con éxito!');
+                    navigate('my-jobs');
+                } else {
+                    alert(data.error);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // PERFIL DE CANDIDATO CON SELECCIÓN DE HABILIDADES PREDEFINIDAS
+        function renderCandidateProfile(container) {
+            let skillOptions = PREDEFINED_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+
+            container.innerHTML = `
+                <div class="max-w-2xl mx-auto bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                    <h2 class="text-xl font-bold mb-4">Mi Perfil Profesional</h2>
+                    
+                    <div class="mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                        <h3 class="font-semibold mb-2">Añadir Habilidad Predefinida</h3>
+                        <div class="flex gap-2">
+                            <select id="skill-select" class="border rounded-lg px-3 py-2 bg-white flex-grow">
+                                ${skillOptions}
+                            </select>
+                            <input type="number" id="skill-level" min="1" max="5" value="3" title="Nivel del 1 al 5" class="w-16 border rounded-lg px-2 text-center">
+                            <button onclick="addSkill()" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-emerald-700">Agregar</button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        async function addSkill() {
+            const skill_name = document.getElementById('skill-select').value;
+            const level = document.getElementById('skill-level').value;
+
+            try {
+                const res = await fetch(`${API_URL}/skills`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${state.token}`
+                    },
+                    body: JSON.stringify({ skill_name, level: parseInt(level) })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    alert('Habilidad agregada correctamente');
+                } else {
+                    alert(data.error);
+                }
+            } catch (err) {
+                console.error(err);
+            }
+        }
+
+        // INICIALIZACIÓN AL CARGAR LA PÁGINA
+        document.addEventListener('DOMContentLoaded', () => {
+            render();
+        });
     </script>
 </body>
 </html>
