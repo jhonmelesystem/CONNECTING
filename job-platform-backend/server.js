@@ -11,19 +11,32 @@ const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(cors());
 
-// Servir archivos estáticos desde la carpeta 'public'
-app.use(express.static(path.join(__dirname, 'public')));
+// Servir estáticos desde la carpeta public
+const publicPath = path.join(__dirname, 'public');
+app.use(express.static(publicPath));
 
 const JWT_SECRET = process.env.JWT_SECRET || 'connecting_secreto_super_seguro';
 
-// Ruta principal para servir la interfaz web
+// Ruta principal con manejo de errores directo
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+  const indexPath = path.join(__dirname, 'public', 'index.html');
+  res.sendFile(indexPath, (err) => {
+    if (err) {
+      console.error("❌ Error al servir index.html:", err);
+      res.status(500).send(`
+        <h2>🚨 Error al cargar el frontend de CONNECTING</h2>
+        <p>Servidor activo en Railway, pero no se encontró el archivo HTML en: <code>${indexPath}</code></p>
+        <p>Asegúrate de que en tu proyecto de GitHub exista la carpeta <strong>public</strong> y dentro de ella esté el archivo <strong>index.html</strong>.</p>
+      `);
+    }
+  });
 });
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: '🚀 Servidor API de CONNECTING activo y funcionando.' });
 });
+
+// ... (Resto de tus rutas de API: register, login, profile, skills, jobs, etc.)
 
 function verifyToken(req, res, next) {
   const authHeader = req.headers['authorization'];
