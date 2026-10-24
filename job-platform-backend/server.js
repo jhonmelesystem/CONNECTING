@@ -10,6 +10,8 @@ const app = express();
 
 app.use(express.json({ limit: '10mb' }));
 app.use(cors());
+
+// Configuración robusta para servir la carpeta public en producción y desarrollo
 app.use(express.static(path.join(__dirname, 'public')));
 
 const JWT_SECRET = process.env.JWT_SECRET || 'connecting_secreto_super_seguro';
@@ -30,7 +32,6 @@ function verifyToken(req, res, next) {
   });
 }
 
-// MATCHING FLEXIBLE
 function checkSkillMatch(candidateSkills, requirementSkill) {
   if (!requirementSkill) return 100;
   
@@ -121,7 +122,7 @@ app.put('/api/profile', verifyToken, async (req, res) => {
   }
 });
 
-// ==================== HABILIDADES CANDIDATO ====================
+// ==================== HABILIDADES ====================
 
 app.post('/api/skills', verifyToken, async (req, res) => {
   if (req.user.role !== 'candidate') return res.status(403).json({ error: 'Solo candidatos' });
@@ -157,7 +158,7 @@ app.delete('/api/skills/:id', verifyToken, async (req, res) => {
   }
 });
 
-// ==================== VACANTES & POSTULADOS ====================
+// ==================== VACANTES & APLICACIONES ====================
 
 app.get('/api/jobs', async (req, res) => {
   try {
@@ -194,13 +195,11 @@ app.get('/api/employer/jobs', verifyToken, async (req, res) => {
   }
 });
 
-// OBTENER CANDIDATOS QUE APLICARON A UNA VACANTE
 app.get('/api/employer/jobs/:id/applications', verifyToken, async (req, res) => {
   if (req.user.role !== 'employer') return res.status(403).json({ error: 'Acceso denegado' });
   const jobId = req.params.id;
 
   try {
-    // Validar propiedad de la vacante
     const [check] = await db.query(`SELECT id FROM jobs WHERE id = ? AND employer_id = ?`, [jobId, req.user.id]);
     if (check.length === 0) return res.status(404).json({ error: 'Vacante no encontrada o sin permisos' });
 
@@ -212,7 +211,6 @@ app.get('/api/employer/jobs/:id/applications', verifyToken, async (req, res) => 
       ORDER BY a.applied_at DESC
     `, [jobId]);
 
-    // Incluir habilidades de cada candidato
     for (let candidate of applicants) {
       const [skills] = await db.query(`SELECT skill_name, level FROM user_skills WHERE user_id = ?`, [candidate.candidate_id]);
       candidate.skills = skills;
@@ -376,11 +374,13 @@ app.post('/api/jobs/:id/apply', verifyToken, async (req, res) => {
   }
 });
 
+// Captura cualquier otra ruta para servir el index.html del Frontend correctamente
 app.get('*', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
+// CRÍTICO: Usar process.env.PORT para Railway (eliminado el puerto fijo 8080)
 const PORT = process.env.PORT || 4000;
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor CONNECTING corriendo en el puerto ${PORT}`);
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Servidor CONNECTING corriendo correctamente en el puerto ${PORT}`);
 });
