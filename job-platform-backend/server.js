@@ -8,19 +8,16 @@ require('dotenv').config();
 
 const app = express();
 
-// Middlewares
-app.use(express.json({ limit: '10mb' })); // Soporte para imágenes Base64
+app.use(express.json({ limit: '10mb' }));
 app.use(cors());
 app.use(express.static(path.join(__dirname, 'public')));
 
 const JWT_SECRET = process.env.JWT_SECRET || 'connecting_secreto_super_seguro';
 
-// Ruta de salud
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: '🚀 Servidor API de CONNECTING activo y funcionando.' });
 });
 
-// Middleware de autenticación
 function verifyToken(req, res, next) {
   const authHeader = req.headers['authorization'];
   if (!authHeader) return res.status(403).json({ error: 'Token requerido' });
@@ -31,6 +28,35 @@ function verifyToken(req, res, next) {
     req.user = decoded;
     next();
   });
+}
+
+// FUNCION DE MATCHING FLEXIBLE (Smart Screening)
+function checkSkillMatch(candidateSkills, requirementSkill) {
+  const reqClean = requirementSkill.toLowerCase().trim();
+  
+  // Si el requisito contiene comas (ej: "Bachiller, Informatica, Marketing Digital")
+  const reqItems = reqClean.split(',').map(item => item.trim()).filter(Boolean);
+
+  let matchedItems = 0;
+
+  reqItems.forEach(reqSingle => {
+    // Normalizar texto quitando tildes y paréntesis
+    const normalize = str => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+    const reqNorm = normalize(reqSingle);
+
+    const isMatched = candidateSkills.some(candSkill => {
+      const candNorm = normalize(candSkill.skill_name);
+      return candNorm.includes(reqNorm) || reqNorm.includes(candNorm) ||
+             (reqNorm.includes('bachiller') && candNorm.includes('bachiller')) ||
+             (reqNorm.includes('informatica') && candNorm.includes('informatica')) ||
+             (reqNorm.includes('marketing') && candNorm.includes('marketing'));
+    });
+
+    if (isMatched) matchedCount++;
+  });
+
+  const totalReqs = reqItems.length > 0 ? reqItems.length : 1;
+  return Math.round((matchedItems / totalReqs) * 100);
 }
 
 // ==================== AUTH Y PERFIL ====================
@@ -132,7 +158,7 @@ app.delete('/api/skills/:id', verifyToken, async (req, res) => {
   }
 });
 
-// ==================== VACANTES Y SMART SCREENING (85%) ====================
+// ==================== VACANTES Y EVALUACIÓN ====================
 
 app.get('/api/jobs', async (req, res) => {
   try {
@@ -142,7 +168,7 @@ app.get('/api/jobs', async (req, res) => {
 
     if (search) {
       query += ` AND (j.title LIKE ? OR j.description LIKE ? OR j.location LIKE ?)`;
-      queryParams.push(`%${search}%`, `%${search}\%`, `\%${search}%`);
+      queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
     }
 
     if (modality && modality !== 'all') {
@@ -230,6 +256,7 @@ app.delete('/api/jobs/:id', verifyToken, async (req, res) => {
   }
 });
 
+// DETALLE & MATCHING INTELIGENTE (Smart Screening)
 app.get('/api/jobs/:id', async (req, res) => {
   const jobId = req.params.id;
   
@@ -250,19 +277,18 @@ app.get('/api/jobs/:id', async (req, res) => {
     const job = jobs[0];
     const [requirements] = await db.query(`SELECT * FROM job_requirements WHERE job_id = ?`, [jobId]);
 
-    let eligibility = { canApply: false, matchPercentage: 100 };
+    let eligibility = { canApply: false, matchPercentage: 0 };
 
     if (candidateId) {
       const [candidateSkills] = await db.query(`SELECT * FROM user_skills WHERE user_id = ?`, [candidateId]);
 
       if (requirements.length > 0) {
-        let matchedCount = 0;
+        let totalScore = 0;
         requirements.forEach(reqItem => {
-          const found = candidateSkills.some(s => s.skill_name.toLowerCase() === reqItem.skill_name.toLowerCase());
-          if (found) matchedCount++;
+          totalScore += checkSkillMatch(candidateSkills, reqItem.skill_name);
         });
 
-        const matchPercentage = Math.round((matchedCount / requirements.length) * 100);
+        const matchPercentage = Math.min(100, Math.round(totalScore / requirements.length));
         const canApply = matchPercentage >= 85;
 
         eligibility = { canApply, matchPercentage };
@@ -287,15 +313,14 @@ app.post('/api/jobs/:id/apply', verifyToken, async (req, res) => {
     const [candidateSkills] = await db.query(`SELECT * FROM user_skills WHERE user_id = ?`, [candidateId]);
 
     if (requirements.length > 0) {
-      let matchedCount = 0;
+      let totalScore = 0;
       requirements.forEach(reqItem => {
-        const found = candidateSkills.some(s => s.skill_name.toLowerCase() === reqItem.skill_name.toLowerCase());
-        if (found) matchedCount++;
+        totalScore += checkSkillMatch(candidateSkills, reqItem.skill_name);
       });
-      const matchPercentage = Math.round((matchedCount / requirements.length) * 100);
+      const matchPercentage = Math.min(100, Math.round(totalScore / requirements.length));
 
       if (matchPercentage < 85) {
-        return res.status(400).json({ error: 'No alcanzas el 85% de compatibilidad requerido para postularte.' });
+        return res.status(400).json({ error: 'No alcanzas el 85% de compatibilidad requerido para esta vacante.' });
       }
     }
 
