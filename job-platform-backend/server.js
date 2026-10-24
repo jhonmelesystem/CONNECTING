@@ -11,10 +11,15 @@ const app = express();
 app.use(express.json({ limit: '10mb' }));
 app.use(cors());
 
-// Configuración robusta para servir la carpeta public en producción y desarrollo
+// Servir archivos estáticos desde la carpeta 'public'
 app.use(express.static(path.join(__dirname, 'public')));
 
 const JWT_SECRET = process.env.JWT_SECRET || 'connecting_secreto_super_seguro';
+
+// Ruta principal para servir la interfaz web
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', message: '🚀 Servidor API de CONNECTING activo y funcionando.' });
@@ -32,6 +37,7 @@ function verifyToken(req, res, next) {
   });
 }
 
+// FUNCION DE MATCHING FLEXIBLE (Smart Screening)
 function checkSkillMatch(candidateSkills, requirementSkill) {
   if (!requirementSkill) return 100;
   
@@ -168,7 +174,7 @@ app.get('/api/jobs', async (req, res) => {
 
     if (search) {
       query += ` AND (j.title LIKE ? OR j.description LIKE ? OR j.location LIKE ?)`;
-      queryParams.push(`%${search}%`, `%${search}%`, `%${search}%`);
+      queryParams.push(`%${search}%`, `%${search}\%`, `\%${search}%`);
     }
 
     if (modality && modality !== 'all') {
@@ -207,180 +213,9 @@ app.get('/api/employer/jobs/:id/applications', verifyToken, async (req, res) => 
       SELECT a.id as application_id, a.applied_at, u.id as candidate_id, u.name, u.email, u.location, u.profile_picture
       FROM applications a
       JOIN users u ON a.candidate_id = u.id
-      WHERE a.job_id = ?
-      ORDER BY a.applied_at DESC
-    `, [jobId]);
-
-    for (let candidate of applicants) {
-      const [skills] = await db.query(`SELECT skill_name, level FROM user_skills WHERE user_id = ?`, [candidate.candidate_id]);
-      candidate.skills = skills;
-    }
-
+      WHERE a.job_id = ?`, [jobId]);
     res.json(applicants);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
-
-app.post('/api/jobs', verifyToken, async (req, res) => {
-  if (req.user.role !== 'employer') return res.status(403).json({ error: 'Solo empleadores' });
-  const { title, description, location, salary_range, modality, requirements } = req.body;
-
-  try {
-    const [result] = await db.query(
-      `INSERT INTO jobs (employer_id, title, description, location, salary_range, modality) VALUES (?, ?, ?, ?, ?, ?)`,
-      [req.user.id, title, description, location, salary_range, modality || 'presencial']
-    );
-    const jobId = result.insertId;
-
-    if (requirements && Array.isArray(requirements)) {
-      for (let reqItem of requirements) {
-        await db.query(
-          `INSERT INTO job_requirements (job_id, skill_name, level_required, is_mandatory) VALUES (?, ?, ?, 1)`,
-          [jobId, reqItem.skill_name || reqItem, 1]
-        );
-      }
-    }
-
-    res.json({ message: 'Vacante creada con éxito', jobId });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.put('/api/jobs/:id', verifyToken, async (req, res) => {
-  if (req.user.role !== 'employer') return res.status(403).json({ error: 'Solo empleadores' });
-  const jobId = req.params.id;
-  const { title, description, location, salary_range, modality, requirements } = req.body;
-
-  try {
-    const [result] = await db.query(
-      `UPDATE jobs SET title = ?, description = ?, location = ?, salary_range = ?, modality = ? WHERE id = ? AND employer_id = ?`,
-      [title, description, location, salary_range, modality, jobId, req.user.id]
-    );
-
-    if (result.affectedRows === 0) {
-      return res.status(404).json({ error: 'Vacante no encontrada o sin permisos.' });
-    }
-
-    if (requirements && Array.isArray(requirements)) {
-      await db.query(`DELETE FROM job_requirements WHERE job_id = ?`, [jobId]);
-      for (let reqItem of requirements) {
-        await db.query(
-          `INSERT INTO job_requirements (job_id, skill_name, level_required, is_mandatory) VALUES (?, ?, ?, 1)`,
-          [jobId, reqItem.skill_name || reqItem, 1]
-        );
-      }
-    }
-
-    res.json({ message: 'Vacante actualizada correctamente' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.delete('/api/jobs/:id', verifyToken, async (req, res) => {
-  if (req.user.role !== 'employer') return res.status(403).json({ error: 'Solo empleadores' });
-  const jobId = req.params.id;
-
-  try {
-    await db.query(`DELETE FROM job_requirements WHERE job_id = ?`, [jobId]);
-    await db.query(`DELETE FROM applications WHERE job_id = ?`, [jobId]);
-    await db.query(`DELETE FROM jobs WHERE id = ? AND employer_id = ?`, [jobId, req.user.id]);
-    res.json({ message: 'Vacante eliminada con éxito' });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.get('/api/jobs/:id', async (req, res) => {
-  const jobId = req.params.id;
-  
-  let candidateId = null;
-  const authHeader = req.headers['authorization'];
-  if (authHeader) {
-    const token = authHeader.split(' ')[1];
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET);
-      candidateId = decoded.id;
-    } catch (e) {}
-  }
-
-  try {
-    const [jobs] = await db.query(`SELECT j.*, u.name as employer_name FROM jobs j JOIN users u ON j.employer_id = u.id WHERE j.id = ?`, [jobId]);
-    if (jobs.length === 0) return res.status(404).json({ error: 'Vacante no encontrada' });
-
-    const job = jobs[0];
-    const [requirements] = await db.query(`SELECT * FROM job_requirements WHERE job_id = ?`, [jobId]);
-
-    let eligibility = { canApply: false, matchPercentage: 0 };
-
-    if (candidateId) {
-      const [candidateSkills] = await db.query(`SELECT * FROM user_skills WHERE user_id = ?`, [candidateId]);
-
-      if (requirements.length > 0) {
-        let totalScore = 0;
-        requirements.forEach(reqItem => {
-          totalScore += checkSkillMatch(candidateSkills, reqItem.skill_name);
-        });
-
-        const matchPercentage = Math.min(100, Math.round(totalScore / requirements.length));
-        const canApply = matchPercentage >= 85;
-
-        eligibility = { canApply, matchPercentage };
-      } else {
-        eligibility = { canApply: true, matchPercentage: 100 };
-      }
-    }
-
-    res.json({ job, requirements, eligibility });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-app.post('/api/jobs/:id/apply', verifyToken, async (req, res) => {
-  if (req.user.role !== 'candidate') return res.status(403).json({ error: 'Solo candidatos' });
-  const jobId = req.params.id;
-  const candidateId = req.user.id;
-
-  try {
-    const [requirements] = await db.query(`SELECT * FROM job_requirements WHERE job_id = ?`, [jobId]);
-    const [candidateSkills] = await db.query(`SELECT * FROM user_skills WHERE user_id = ?`, [candidateId]);
-
-    if (requirements.length > 0) {
-      let totalScore = 0;
-      requirements.forEach(reqItem => {
-        totalScore += checkSkillMatch(candidateSkills, reqItem.skill_name);
-      });
-      const matchPercentage = Math.min(100, Math.round(totalScore / requirements.length));
-
-      if (matchPercentage < 85) {
-        return res.status(400).json({ error: 'No alcanzas el 85% de compatibilidad requerido para esta vacante.' });
-      }
-    }
-
-    await db.query(
-      `INSERT INTO applications (job_id, candidate_id, status) VALUES (?, ?, 'pending')`,
-      [jobId, candidateId]
-    );
-
-    res.json({ message: '¡Postulación realizada con éxito!' });
-  } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') {
-      return res.status(400).json({ error: 'Ya te has postulado a esta vacante.' });
-    }
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Captura cualquier otra ruta para servir el index.html del Frontend correctamente
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-
-// CRÍTICO: Usar process.env.PORT para Railway (eliminado el puerto fijo 8080)
-const PORT = process.env.PORT || 4000;
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Servidor CONNECTING corriendo correctamente en el puerto ${PORT}`);
 });
