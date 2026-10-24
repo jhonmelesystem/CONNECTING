@@ -238,7 +238,7 @@
                     if (job.modality === 'remoto') badge = '<span class="bg-green-100 text-green-800 text-xs px-2.5 py-1 rounded-full font-semibold">💻 Remoto</span>';
                     if (job.modality === 'hibrido') badge = '<span class="bg-purple-100 text-purple-800 text-xs px-2.5 py-1 rounded-full font-semibold">🔄 Híbrido</span>';
 
-                    html += `
+                  html += `
                         <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition">
                             <div class="flex justify-between items-start">
                                 <div class="flex items-center gap-3">
@@ -253,7 +253,8 @@
                             <p class="text-gray-700 mt-3 text-sm line-clamp-2">${job.description}</p>
                             <div class="mt-4 flex justify-between items-center pt-3 border-t border-gray-50">
                                 <span class="text-sm font-semibold text-emerald-600">${job.salary_range || 'Salario a convenir'}</span>
-                                <button onclick="openJobDetail(${job.id})" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
+                                <!-- Asegurar que el id se pasa exactamente como número sin caracteres adicionales -->
+                                <button onclick="openJobDetail(${Number(job.id)})" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700">
                                     Ver Detalle
                                 </button>
                             </div>
