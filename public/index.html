@@ -624,6 +624,7 @@
                     localStorage.setItem('role', data.role);
                     localStorage.setItem('name', data.name);
                     localStorage.setItem('location', data.location || '');
+                    localStorage.setItem('telefono', data.telefono || '');
                     localStorage.setItem('profile_picture', data.profile_picture || '');
 
                     state.token = data.token;
@@ -734,6 +735,11 @@
                                 <select id="prof-location" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-semibold">
                                     ${locationOptions}
                                 </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Mi WhatsApp de Contacto</label>
+                                <input type="text" id="profile-telefono" value="${data.telefono || ''}" placeholder="Ej. 8095551234" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+                                <p class="text-[10px] text-slate-400 mt-1">Las empresas usarán este número para contactarte directamente por WhatsApp cuando apliques a sus vacantes.</p>
                             </div>
                             <button type="submit" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold hover:bg-blue-700 active:scale-95 transition shadow-sm">Guardar Cambios</button>
                         </form>
