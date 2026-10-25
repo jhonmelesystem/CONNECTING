@@ -461,9 +461,9 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    alert('¡Postulación enviada exitosamente!');
+                    showToast('¡Postulación enviada exitosamente!');
                     closeModal();
-                } else { alert(data.error); }
+                } else { showToast(data.error, 'error'); }
             } catch (err) { console.error(err); }
         }
 
@@ -565,7 +565,7 @@
                     state.profile_picture = data.profile_picture || '';
 
                     navigate('home');
-                } else { alert(data.error); }
+                } else { showToast(data.error, 'error'); }
             } catch (err) { console.error(err); }
         }
 
@@ -629,9 +629,9 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    alert('¡Registro exitoso! Inicia sesión.');
+                    showToast('¡Registro exitoso! Inicia sesión.');
                     navigate('login');
-                } else { alert(data.error); }
+                } else { showToast(data.error, 'error'); }
             } catch (err) { console.error(err); }
         }
 
@@ -756,7 +756,7 @@
                     body: JSON.stringify({ skill_name, experience_years: parseInt(experience_years) })
                 });
                 const data = await res.json();
-                if (res.ok) { loadUserSkills(); } else { alert(data.error); }
+                if (res.ok) { loadUserSkills(); } else { showToast(data.error, 'error'); }
             } catch (err) { console.error(err); }
         }
 
@@ -782,10 +782,10 @@
                     state.name = data.user.name;
                     state.location = data.user.location;
                     state.profile_picture = data.user.profile_picture;
-                    alert('¡Perfil actualizado con éxito!');
+                    showToast('¡Perfil actualizado con éxito!');
                     renderProfile(document.getElementById('main-content'));
                     updateNav();
-                } else { alert(data.error); }
+                } else { showToast(data.error, 'error'); }
             } catch (err) { console.error(err); }
         }
 
@@ -952,9 +952,9 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    alert('¡Vacante publicada con éxito!');
+                    showToast('¡Vacante publicada con éxito!');
                     navigate('my-jobs');
-                } else { alert(data.error); }
+                } else { showToast(data.error, 'error'); }
             } catch (err) { console.error(err); }
         }
 
@@ -1052,9 +1052,9 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    alert('¡Vacante actualizada correctamente!');
+                    showToast('¡Vacante actualizada correctamente!');
                     navigate('my-jobs');
-                } else { alert(data.error); }
+                } else { showToast(data.error, 'error'); }
             } catch (err) { console.error(err); }
         }
 
@@ -1067,9 +1067,9 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    alert(data.message);
+                    showToast(data.message);
                     renderEmployerJobs(document.getElementById('main-content'));
-                } else { alert(data.error); }
+                } else { showToast(data.error, 'error'); }
             } catch (err) { console.error(err); }
         }
 

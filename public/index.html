@@ -418,9 +418,9 @@
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    alert('¡Postulación enviada exitosamente!');
+                    showToast('¡Postulación enviada exitosamente!');
                     closeModal();
-                } else { alert(data.error); }
+                } else { showToast(data.error, 'error'); }
             } catch (err) { console.error(err); }
         }
 
