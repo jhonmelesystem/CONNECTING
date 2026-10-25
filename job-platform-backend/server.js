@@ -113,19 +113,46 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
+// Actualizar perfil de usuario (Candidato o Empleador)
 app.put('/api/profile', verifyToken, async (req, res) => {
-  const { name, location, profile_picture } = req.body;
-  try {
-    await db.query(
-      `UPDATE users SET name = COALESCE(?, name), location = COALESCE(?, location), profile_picture = COALESCE(?, profile_picture) WHERE id = ?`,
-      [name, location, profile_picture, req.user.id]
-    );
+    const userId = req.id || req.user?.id; // Asegúrate de cómo guardas el ID en tu middleware verifyToken
+    const { name, location, telefono, profile_picture } = req.body;
 
-    const [updatedUser] = await db.query(`SELECT id, name, role, email, location, profile_picture FROM users WHERE id = ?`, [req.user.id]);
-    res.json({ message: 'Perfil actualizado correctamente', user: updatedUser[0] });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    try {
+        const updateQuery = `
+            UPDATE users 
+            SET name = ?, location = ?, telefono = ?, profile_picture = ? 
+            WHERE id = ?
+        `;
+
+        // Usamos await en lugar de callback para mantener el estándar de tu servidor
+        await db.query(updateQuery, [
+            name, 
+            location, 
+            telefono || '', 
+            profile_picture || '', 
+            userId
+        ]);
+
+        // Consultamos el usuario actualizado para devolverlo
+        const [userRes] = await db.query(
+            'SELECT id, name, email, role, location, telefono, profile_picture FROM users WHERE id = ?', 
+            [userId]
+        );
+
+        if (!userRes || userRes.length === 0) {
+            return res.status(500).json({ error: 'Perfil actualizado pero no se pudo recuperar' });
+        }
+
+        res.json({ 
+            message: 'Perfil actualizado con éxito', 
+            user: userRes[0] 
+        });
+
+    } catch (err) {
+        console.error("❌ Error en PUT /api/profile:", err);
+        res.status(500).json({ error: 'Error del servidor al actualizar el perfil' });
+    }
 });
 
 // ==================== HABILIDADES ====================
@@ -315,24 +342,41 @@ app.delete('/api/jobs/:id', verifyToken, async (req, res) => {
 });
 
 // OBTENER DETALLE DE VACANTE Y SMART SCREENING
-app.get('/api/jobs/:id', async (req, res) => {
+// Obtener candidatos postulados a una vacante (para el empleador)
+app.get('/api/employer/jobs/:id/applications', verifyToken, async (req, res) => {
+    const jobId = req.params.id;
+    try {
+        const query = `
+            SELECT applications.*, users.name, users.email, users.telefono, users.profile_picture 
+            FROM applications 
+            JOIN users ON applications.candidate_id = users.id 
+            WHERE applications.job_id = ?
+        `;
+        
+        // Dependiendo de tu conexión (ej. db.query con mysql2 / mysql)
+        db.query(query, [jobId], async (err, results) => {
+            if (err) {
+                console.error(err);
+                return res.status(500).json({ error: 'Error en la base de datos' });
+            }
+
+            // Para cada candidato, podemos buscar también sus habilidades si las muestras
+            res.json(results);
+        });
+    } catch (err) { 
+        console.error(err);
+        res.status(500).json({ error: 'Error del servidor' });
+    }
+  });
+
+app.get('/api/jobs/:id', verifyToken, async (req, res) => {
   const jobId = parseInt(req.params.id, 10);
+  const candidateId = req.user.role === 'candidate' ? req.user.id : null;
 
   if (isNaN(jobId)) {
     return res.status(400).json({ error: 'ID de vacante inválido' });
   }
 
-  let candidateId = null;
-  const authHeader = req.headers['authorization'];
-  if (authHeader && authHeader.startsWith('Bearer ')) {
-    const token = authHeader.split(' ')[1];
-    try {
-      const decoded = jwt.verify(token, JWT_SECRET);
-      candidateId = decoded.id;
-    } catch (e) {
-      candidateId = null;
-    }
-  }
 
   try {
     const [jobs] = await db.query(

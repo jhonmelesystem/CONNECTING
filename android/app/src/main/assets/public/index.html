@@ -707,20 +707,20 @@
         async function renderProfile(container) {
             tempProfilePicBase64 = state.profile_picture;
             
-            // Cargamos primero los datos del perfil desde el servidor para asegurarnos de tener el teléfono y datos actualizados
-            let data = {};
+            // Intentamos obtener los datos más recientes del servidor (incluyendo el teléfono)
+            let currentTelefono = state.telefono || '';
             try {
-                const res = await fetch(`${API_URL}/profile`, {
+                const resProfile = await fetch(`${API_URL}/profile`, {
                     headers: { 'Authorization': `Bearer ${state.token}` }
                 });
-                if (res.ok) {
-                    data = await res.json();
+                if (resProfile.ok) {
+                    const profileData = await resProfile.json();
+                    currentTelefono = profileData.telefono || '';
+                    state.telefono = currentTelefono;
                 }
-            } catch (err) {
-                console.error("Error al cargar perfil:", err);
-            }
+            } catch (e) { console.error(e); }
 
-            let locationOptions = LOCATIONS_LIST.map(l => `<option value="${l}" ${(data.location || state.location) === l ? 'selected' : ''}>${l}</option>`).join('');
+            let locationOptions = LOCATIONS_LIST.map(l => `<option value="${l}" ${state.location === l ? 'selected' : ''}>${l}</option>`).join('');
             
             let academicOpt = ACADEMIC_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
             let coreOpt = CORE_CATEGORIES.map(s => `<option value="${s}">${s}</option>`).join('');
@@ -734,7 +734,7 @@
                         <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 mb-4">Mi Perfil</h2>
                         <form onsubmit="handleUpdateProfile(event)" class="space-y-3.5">
                             <div class="flex items-center gap-3.5 mb-3">
-                                ${(data.profile_picture || state.profile_picture) ? `<img src="${data.profile_picture || state.profile_picture}" class="w-14 h-14 rounded-2xl object-cover border shadow-sm shrink-0">` : '<div class="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center font-bold text-lg text-white shadow-sm shrink-0">👤</div>'}
+                                ${state.profile_picture ? `<img src="${state.profile_picture}" class="w-14 h-14 rounded-2xl object-cover border shadow-sm shrink-0">` : '<div class="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center font-bold text-lg text-white shadow-sm shrink-0">👤</div>'}
                                 <div class="min-w-0">
                                     <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Cambiar Foto</label>
                                     <input type="file" accept="image/*" onchange="handleImageUpload(event)" class="text-[11px] text-slate-500 truncate">
@@ -742,7 +742,7 @@
                             </div>
                             <div>
                                 <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Nombre / Empresa</label>
-                                <input type="text" id="prof-name" value="${data.name || state.name || ''}" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+                                <input type="text" id="prof-name" value="${state.name || ''}" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
                             </div>
                             <div>
                                 <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Ubicación / Sector</label>
@@ -751,9 +751,9 @@
                                 </select>
                             </div>
                             <div>
-                                <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Mi WhatsApp / Teléfono de Contacto</label>
-                                <input type="text" id="prof-telefono" value="${state.telefono || ''}" placeholder="Ej. 8095551234" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
-                                <span class="text-[10px] text-slate-400 mt-1 block font-medium">Las empresas usarán este número para escribirte directo por WhatsApp cuando apliques.</span>
+                                <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Mi WhatsApp de Contacto</label>
+                                <input type="text" id="prof-telefono" value="${currentTelefono}" placeholder="Ej. 8095551234" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+                                <span class="text-[10px] text-slate-400 mt-1 block font-medium">Las empresas usarán este número para contactarte directamente por WhatsApp cuando apliques a sus vacantes.</span>
                             </div>
                             <button type="submit" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold hover:bg-blue-700 active:scale-95 transition shadow-sm">Guardar Cambios</button>
                         </form>
@@ -852,7 +852,7 @@
             e.preventDefault();
             const name = document.getElementById('prof-name').value;
             const location = document.getElementById('prof-location').value;
-            const telefono = document.getElementById('prof-telefono')?.value || '';
+            const telefono = document.getElementById('prof-telefono').value;
 
             try {
                 const res = await fetch(`${API_URL}/profile`, {
@@ -880,7 +880,7 @@
                     state.telefono = data.user.telefono || '';
                     state.profile_picture = data.user.profile_picture;
 
-                    showToast('¡Perfil actualizado con éxito!');
+                    alert('¡Perfil actualizado con éxito!');
                     renderProfile(document.getElementById('main-content'));
                     updateNav();
                 } else { alert(data.error); }
