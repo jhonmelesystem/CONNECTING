@@ -24,16 +24,17 @@
 </head>
 <body class="h-full bg-slate-50 text-slate-900 flex flex-col selection:bg-blue-600 selection:text-white antialiased">
 
-    <!-- NAVEGACIÓN SUPERIOR -->
+    <!-- NAVEGACIÓN SUPERIOR CON LOGO ADAPTABLE -->
     <header class="bg-slate-900/95 backdrop-blur-md text-white shadow-xl sticky top-0 z-50 border-b border-slate-800/80">
         <div class="max-w-6xl mx-auto px-3 sm:px-6 py-3 flex justify-between items-center gap-2">
-            <div onclick="navigate('home')" class="flex items-center gap-2 cursor-pointer group min-w-0">
-                <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-blue-500/25 shrink-0 group-hover:scale-105 active:scale-95 transition">
-                    <span class="text-white font-black text-sm sm:text-lg">⚡</span>
+            <div onclick="navigate('home')" class="flex items-center gap-2.5 cursor-pointer group min-w-0">
+                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-blue-500/25 shrink-0 group-hover:scale-105 active:scale-95 transition">
+                    <span class="text-white font-black text-base sm:text-lg">⚡</span>
                 </div>
-                <div class="min-w-0">
-                    <span class="text-xs sm:text-base font-extrabold tracking-tight text-white block leading-none truncate">CONNECTING</span>
-                    <span class="text-[8px] sm:text-[9px] font-semibold text-emerald-400 tracking-wider uppercase block mt-0.5 truncate">Smart Hiring RD</span>
+                <!-- En pantallas muy pequeñas (iPhone 5/SE) el texto se oculta automáticamente para evitar cortes, y aparece en pantallas sm en adelante -->
+                <div class="hidden sm:block min-w-0">
+                    <span class="text-sm sm:text-base font-extrabold tracking-tight text-white block leading-none truncate">CONNECTING</span>
+                    <span class="text-[9px] font-semibold text-emerald-400 tracking-wider uppercase block mt-0.5 truncate">Smart Hiring RD</span>
                 </div>
             </div>
             <div id="nav-actions" class="flex items-center gap-1.5 sm:gap-3 text-xs font-medium shrink-0"></div>
@@ -122,7 +123,7 @@
             'Remoto (Global / Internacional)'
         ];
 
-        // FUNCIÓ PARA RENDERIZAR BADGES DE MODALIDAD CON ICONOS SVG PROFESIONALES
+        
         function getModalityBadge(modality) {
             if (modality === 'remoto') {
                 return `
@@ -645,7 +646,7 @@
                                     ${expOptions}
                                 </select>
                             </div>
-                            <button onclick="addUserSkill()" class="bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-xs font-bold hover:bg-emerald-700 active:scale-95 transition shadow-sm">+ Agregar Habilidad</button>
+                            <button onclick="addUserSkill()" class="bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-xs sm:text-bold hover:bg-emerald-700 active:scale-95 transition shadow-sm">+ Agregar Habilidad</button>
                         </div>
 
                         <div>
