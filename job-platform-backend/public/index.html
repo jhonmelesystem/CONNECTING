@@ -20,48 +20,67 @@
         .animate-fade-in {
             animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
-        /* Sistema de Notificaciones Toast Modernas */
-        .custom-toast {
-            background-color: #1e1e1e;
-            color: #ffffff;
-            padding: 12px 20px;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-            font-family: inherit;
-            font-size: 14px;
-            font-weight: 500;
-            opacity: 0;
-            transform: translateY(20px);
-            animation: toastSlideIn 0.3s forwards, toastFadeOut 0.3s 2.7s forwards;
-            pointer-events: auto;
-            max-width: 300px;
-            word-break: break-word;
-        }
-        .custom-toast.success { background-color: #10b981; }
-        .custom-toast.error { background-color: #ef4444; }
-        @keyframes toastSlideIn {
-            to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes toastFadeOut {
-            0% { opacity: 1; transform: translateY(0); }
-            100% { opacity: 0; transform: translateY(20px); }
-        }
+        /* Estilos para los mensajes flotantes automáticos */
+.custom-toast {
+  background-color: #1e1e1e;
+  color: #ffffff;
+  padding: 12px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: toastSlideIn 0.3s forwards, toastFadeOut 0.3s 2.7s forwards;
+  pointer-events: auto;
+  max-width: 300px;
+  word-break: break-word;
+}
+
+.custom-toast.success {
+  background-color: #10b981; /* Verde moderno para éxito */
+}
+
+.custom-toast.error {
+  background-color: #ef4444; /* Rojo moderno para errores */
+}
+
+@keyframes toastSlideIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toastFadeOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
     </style>
 </head>
 <body class="h-full bg-slate-50 text-slate-900 flex flex-col selection:bg-blue-600 selection:text-white antialiased">
 
-    <!-- NAVEGACIÓN SUPERIOR -->
+    <!-- NAVEGACIÓN SUPERIOR CON BOTONES COMPACTOS PARA PANTALLAS PEQUEÑAS -->
     <header class="bg-slate-900/95 backdrop-blur-md text-white shadow-xl sticky top-0 z-50 border-b border-slate-800/80">
         <div class="max-w-6xl mx-auto px-2.5 sm:px-6 py-2.5 flex justify-between items-center gap-1.5">
             <div onclick="navigate('home')" class="flex items-center gap-2 cursor-pointer group min-w-0">
                 <div class="w-8 h-8 sm:w-10 sm:h-10 rounded-xl sm:rounded-2xl bg-gradient-to-tr from-blue-600 via-indigo-600 to-emerald-400 flex items-center justify-center shadow-lg shadow-blue-500/25 shrink-0 group-hover:scale-105 active:scale-95 transition">
                     <span class="text-white font-black text-sm sm:text-lg">⚡</span>
                 </div>
+                <!-- El texto del logo se oculta en iPhone 5/SE y aparece en pantallas sm en adelante -->
                 <div class="hidden sm:block min-w-0">
                     <span class="text-sm sm:text-base font-extrabold tracking-tight text-white block leading-none truncate">CONNECTING</span>
                     <span class="text-[9px] font-semibold text-emerald-400 tracking-wider uppercase block mt-0.5 truncate">Smart Hiring RD</span>
                 </div>
             </div>
+            <!-- Acciones de navegación adaptadas con espaciado anti-superposición -->
             <div id="nav-actions" class="flex items-center gap-1 sm:gap-2.5 text-[10px] sm:text-xs font-medium shrink-0"></div>
         </div>
     </header>
@@ -76,9 +95,6 @@
             <div id="modal-content"></div>
         </div>
     </div>
-
-    <!-- CONTENEDOR DE TOASTS -->
-    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
 
     <!-- PIE DE PÁGINA -->
     <footer class="bg-slate-900 text-slate-400 text-center py-5 px-3 text-[11px] sm:text-xs border-t border-slate-800 mt-auto">
@@ -100,18 +116,56 @@
         let tempProfilePicBase64 = '';
         let selectedJobRequirements = [];
 
-        // Sistema de Toast Global
-        function showToast(message, type = 'success') {
-            const container = document.getElementById('toast-container');
-            if (!container) return;
-            const toast = document.createElement('div');
-            toast.className = `custom-toast ${type}`;
-            toast.innerText = message;
-            container.appendChild(toast);
-            setTimeout(() => {
-                toast.remove();
-            }, 3000);
-        }
+        const ACADEMIC_SKILLS = [
+            'Bachiller (Educación Secundaria Completa)',
+            'Técnico Superior / Tecnólogo',
+            'Estudiante Universitario',
+            'Grado / Licenciatura Profesional',
+            'Postgrado / Maestría / Diplomado'
+        ];
+
+        const CORE_CATEGORIES = [
+            'Informática (Desarrollo Web & Software)',
+            'Informática (Soporte Técnico & Redes)',
+            'Informática (Bases de Datos & MySQL)',
+            'Marketing Digital (Gestión de Redes & SEO)',
+            'Marketing Digital (Publicidad & Campañas Meta/Google)',
+            'Marketing Digital (Creación de Contenido & Copywriting)'
+        ];
+
+        const OTHER_AREAS_SKILLS = [
+            'Atención al Cliente & Telemercadeo',
+            'Ventas & Comercial',
+            'Contabilidad & Finanzas',
+            'Recursos Humanos & Gestión de Personal',
+            'Diseño Gráfico & Multimedia',
+            'Gestión de Proyectos & Planificación',
+            'Logística, Inventario & Almacén',
+            'Administración & Recepción',
+            'Mantenimiento Técnico & Electromecánica',
+            'Conducción, Entrega & Mensajería',
+            'Idiomas: Inglés Avanzado / Bilingüe'
+        ];
+
+        const SOFT_SKILLS = [
+            'Liderazgo', 'Trabajo en Equipo', 'Comunicación Efectiva', 'Resolución de Problemas',
+            'Pensamiento Crítico', 'Gestión del Tiempo', 'Adaptabilidad al Cambio', 'Negociación',
+            'Orientación a Resultados', 'Empatía y Colaboración', 'Inteligencia Emocional'
+        ];
+
+        const EXPERIENCE_LEVELS = [
+            { value: 1, label: 'Sin Experiencia / Principiante' },
+            { value: 2, label: '1 a 2 años de experiencia' },
+            { value: 3, label: '3 a 5 años de experiencia' },
+            { value: 4, label: 'Más de 5 años (Senior / Experto)' }
+        ];
+
+        const LOCATIONS_LIST = [
+            'Santo Domingo, Distrito Nacional', 'Santo Domingo Este', 'Santo Domingo Norte',
+            'Santo Domingo Oeste', 'Bajos de Haina, San Cristóbal', 'Santiago de los Caballeros',
+            'La Romana', 'Punta Cana / Bávaro', 'San Francisco de Macorís', 'Puerto Plata',
+            'Remoto (Global / Internacional)'
+        ];
 
         function getModalityBadge(modality) {
             if (modality === 'remoto') {
@@ -135,6 +189,17 @@
                         Presencial
                     </span>
                 `;
+            }
+        }
+
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onloadend = function () {
+                    tempProfilePicBase64 = reader.result;
+                };
+                reader.readAsDataURL(file);
             }
         }
 
@@ -172,7 +237,6 @@
             state.name = null;
             state.location = '';
             state.profile_picture = '';
-            showToast('Sesión cerrada correctamente');
             navigate('home');
         }
 
@@ -329,6 +393,7 @@
                     </span>
                 `).join('');
 
+                // CABECERA ADAPTABLE: Usamos flex-col en móviles extra pequeños para que el badge de modalidad baje ordenadamente y no se superponga
                 content.innerHTML = `
                     <div class="space-y-4">
                         <div class="border-b border-slate-100 pb-3.5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
@@ -370,7 +435,7 @@
 
                         <div class="pt-2 border-t border-slate-100">
                             ${state.token && state.role === 'candidate' ? `
-                                <button onclick="applyToJob(${jobId})" ${!satisfiesMatch ? 'disabled' : ''} 
+                                <button onclick="applyToJob(${job.id})" ${!satisfiesMatch ? 'disabled' : ''} 
                                     class="w-full py-3 rounded-xl text-xs sm:text-sm font-bold text-white transition active:scale-95 shadow-md ${satisfiesMatch ? 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-900/20' : 'bg-slate-200 text-slate-400 cursor-not-allowed'}">
                                     ${satisfiesMatch ? 'Enviar Postulación Oficial' : 'No cumples el 85% requerido'}
                                 </button>
@@ -398,11 +463,10 @@
                 if (res.ok) {
                     showToast('¡Postulación enviada exitosamente!');
                     closeModal();
-                } else { showToast(data.error || 'Error al postularse', 'error'); }
+                } else { showToast(data.error, 'error'); }
             } catch (err) { console.error(err); }
         }
 
-        // FUNCIÓN ACTUALIZADA CON BOTONES DE CONTACTO DIRECTO (WHATSAPP Y CORREO)
         async function viewApplicants(jobId) {
             const modal = document.getElementById('job-modal');
             const content = document.getElementById('modal-content');
@@ -425,43 +489,19 @@
                         ? c.skills.map(s => `<span class="bg-blue-50 text-blue-700 text-[10px] px-2 py-0.5 rounded-lg border border-blue-200/60 font-bold">⚡ ${s.skill_name}</span>`).join('')
                         : '<span class="text-[11px] text-slate-400 italic">Sin habilidades</span>';
 
-                    // Limpieza del número para WhatsApp (solo dígitos)
-                    const telefonoLimpio = c.telefono ? c.telefono.replace(/\D/g, '') : '';
-                    
-                    const mensajeWS = encodeURIComponent(
-                        `Hola ${c.name}, vimos tu postulación en CONNECTING y nos gustaría ponernos en contacto contigo.`
-                    );
-
                     return `
-                        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col gap-3 mb-3">
+                        <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col gap-2.5">
                             <div class="flex items-center gap-3">
                                 ${c.profile_picture ? `<img src="${c.profile_picture}" class="w-10 h-10 rounded-xl object-cover border shrink-0">` : '<div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-slate-600 text-xs shrink-0">👤</div>'}
                                 <div class="min-w-0">
                                     <h4 class="font-extrabold text-slate-900 text-xs sm:text-sm truncate">${c.name}</h4>
                                     <p class="text-[11px] text-slate-500 truncate">📧 ${c.email}</p>
-                                    <p class="text-[11px] text-slate-500 truncate">📞 ${c.telefono || 'No especificado'}</p>
                                     <p class="text-[9px] text-emerald-600 font-bold mt-0.5">✅ Smart Screening Superado (85%+)</p>
                                 </div>
                             </div>
                             <div>
                                 <p class="text-[10px] font-bold text-slate-600 mb-1">Habilidades:</p>
                                 <div class="flex flex-wrap gap-1">${skillsBadges}</div>
-                            </div>
-                            
-                            <!-- Botones de Contacto Directo para el Reclutador -->
-                            <div class="flex gap-2 pt-2 border-t border-slate-100">
-                                ${telefonoLimpio ? `
-                                    <a href="https://wa.me/${telefonoLimpio}?text=${mensajeWS}" 
-                                       target="_blank" 
-                                       rel="noopener noreferrer" 
-                                       class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white text-center py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
-                                        💬 WhatsApp
-                                    </a>
-                                ` : ''}
-                                <a href="mailto:${c.email}?subject=Postulación en CONNECTING&body=Hola ${c.name}," 
-                                   class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-center py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
-                                    ✉️ Correo
-                                </a>
                             </div>
                         </div>
                     `;
@@ -475,10 +515,7 @@
                         </div>
                     </div>
                 `;
-            } catch (err) { 
-                console.error(err); 
-                content.innerHTML = `<p class="text-center py-6 text-rose-600 text-xs font-semibold">Error al cargar los candidatos.</p>`;
-            }
+            } catch (err) { console.error(err); }
         }
 
         function renderLogin(container) {
@@ -507,12 +544,13 @@
             const password = document.getElementById('login-password').value;
 
             try {
-                const res = await fetch(`${API_URL}/auth/login`, {
+                const res = await fetch(`${API_URL}/login`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email, password })
                 });
                 const data = await res.json();
+
                 if (res.ok) {
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('role', data.role);
@@ -526,32 +564,22 @@
                     state.location = data.location || '';
                     state.profile_picture = data.profile_picture || '';
 
-                    showToast('¡Bienvenido de nuevo!');
                     navigate('home');
-                } else {
-                    showToast(data.error || 'Credenciales incorrectas', 'error');
-                }
-            } catch (err) {
-                console.error(err);
-                showToast('Error de conexión con el servidor', 'error');
-            }
+                } else { showToast(data.error, 'error'); }
+            } catch (err) { console.error(err); }
         }
 
         function renderRegister(container) {
+            tempProfilePicBase64 = '';
+            let locationOptions = LOCATIONS_LIST.map(l => `<option value="${l}">${l}</option>`).join('');
+
             container.innerHTML = `
                 <div class="max-w-md mx-auto bg-white p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80 mt-2 animate-fade-in">
                     <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 mb-1 text-center">Crear Cuenta</h2>
-                    <p class="text-[11px] sm:text-xs text-slate-500 text-center mb-5 font-medium">Únete a CONNECTING hoy</p>
-                    <form onsubmit="handleRegister(event)" class="space-y-3">
+                    <p class="text-[11px] sm:text-xs text-slate-500 text-center mb-5 font-medium">Únete a la red de empleo inteligente</p>
+                    <form onsubmit="handleRegister(event)" class="space-y-3.5">
                         <div>
-                            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Tipo de Usuario</label>
-                            <select id="reg-role" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-semibold">
-                                <option value="candidate">Candidato (Busco Empleo)</option>
-                                <option value="employer">Empleador (Contrato Personal)</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Nombre Completo o Empresa</label>
+                            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Nombre Completo / Empresa</label>
                             <input type="text" id="reg-name" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
                         </div>
                         <div>
@@ -559,14 +587,27 @@
                             <input type="email" id="reg-email" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Teléfono (Para contacto WhatsApp)</label>
-                            <input type="text" id="reg-telefono" placeholder="Ej. 8095551234" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
-                        </div>
-                        <div>
                             <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Contraseña</label>
                             <input type="password" id="reg-password" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
                         </div>
-                        <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl text-xs sm:text-sm font-bold hover:bg-blue-700 active:scale-95 transition shadow-sm mt-2">Registrarse</button>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Tipo de Cuenta</label>
+                            <select id="reg-role" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-semibold">
+                                <option value="candidate">Busco Empleo (Candidato)</option>
+                                <option value="employer">Deseo Publicar Empleos (Empleador)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Ubicación / Sector</label>
+                            <select id="reg-location" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-semibold">
+                                ${locationOptions}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Foto de Perfil</label>
+                            <input type="file" accept="image/*" onchange="handleImageUpload(event)" class="w-full text-[11px] text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-[11px] file:font-bold file:bg-blue-50 file:text-blue-700">
+                        </div>
+                        <button type="submit" class="w-full bg-emerald-600 text-white py-3 rounded-xl text-xs sm:text-sm font-bold hover:bg-emerald-700 active:scale-95 transition shadow-sm">Registrarse</button>
                     </form>
                 </div>
             `;
@@ -574,139 +615,331 @@
 
         async function handleRegister(e) {
             e.preventDefault();
-            const role = document.getElementById('reg-role').value;
             const name = document.getElementById('reg-name').value;
             const email = document.getElementById('reg-email').value;
-            const telefono = document.getElementById('reg-telefono').value;
             const password = document.getElementById('reg-password').value;
+            const role = document.getElementById('reg-role').value;
+            const location = document.getElementById('reg-location').value;
 
             try {
-                const res = await fetch(`${API_URL}/auth/register`, {
+                const res = await fetch(`${API_URL}/register`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ role, name, email, telefono, password })
+                    body: JSON.stringify({ name, email, password, role, location, profile_picture: tempProfilePicBase64 })
                 });
                 const data = await res.json();
                 if (res.ok) {
-                    showToast('¡Cuenta creada exitosamente! Inicia sesión.');
+                    showToast('¡Registro exitoso! Inicia sesión.');
                     navigate('login');
-                } else {
-                    showToast(data.error || 'Error al registrarse', 'error');
-                }
-            } catch (err) {
-                console.error(err);
-                showToast('Error de conexión', 'error');
-            }
+                } else { showToast(data.error, 'error'); }
+            } catch (err) { console.error(err); }
         }
 
         async function renderProfile(container) {
-            container.innerHTML = `<div class="text-center py-10"><p class="text-xs text-slate-500">Cargando perfil...</p></div>`;
+            tempProfilePicBase64 = state.profile_picture;
+            let locationOptions = LOCATIONS_LIST.map(l => `<option value="${l}" ${state.location === l ? 'selected' : ''}>${l}</option>`).join('');
+            
+            let academicOpt = ACADEMIC_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+            let coreOpt = CORE_CATEGORIES.map(s => `<option value="${s}">${s}</option>`).join('');
+            let otherOpt = OTHER_AREAS_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+            let softOpt = SOFT_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+            let expOptions = EXPERIENCE_LEVELS.map(e => `<option value="${e.value}">${e.label}</option>`).join('');
+
+            container.innerHTML = `
+                <div class="max-w-2xl mx-auto space-y-4 animate-fade-in">
+                    <div class="bg-white p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80">
+                        <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 mb-4">Mi Perfil</h2>
+                        <form onsubmit="handleUpdateProfile(event)" class="space-y-3.5">
+                            <div class="flex items-center gap-3.5 mb-3">
+                                ${state.profile_picture ? `<img src="${state.profile_picture}" class="w-14 h-14 rounded-2xl object-cover border shadow-sm shrink-0">` : '<div class="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center font-bold text-lg text-white shadow-sm shrink-0">👤</div>'}
+                                <div class="min-w-0">
+                                    <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Cambiar Foto</label>
+                                    <input type="file" accept="image/*" onchange="handleImageUpload(event)" class="text-[11px] text-slate-500 truncate">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Nombre / Empresa</label>
+                                <input type="text" id="prof-name" value="${state.name || ''}" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Ubicación / Sector</label>
+                                <select id="prof-location" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-semibold">
+                                    ${locationOptions}
+                                </select>
+                            </div>
+                            <button type="submit" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold hover:bg-blue-700 active:scale-95 transition shadow-sm">Guardar Cambios</button>
+                        </form>
+                    </div>
+
+                    ${state.role === 'candidate' ? `
+                    <div class="bg-white p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80">
+                        <h3 class="text-base sm:text-lg font-extrabold text-slate-900 mb-1">Mis Habilidades & Conocimientos</h3>
+                        <p class="text-[11px] sm:text-xs text-slate-500 mb-4 font-medium">Habilita el Smart Screening con tus aptitudes.</p>
+                        
+                        <div class="space-y-3.5 mb-5">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Seleccionar Habilidad / Área</label>
+                                <select id="skill-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-semibold">
+                                    <optgroup label="Nivel Académico">${academicOpt}</optgroup>
+                                    <optgroup label="Informática & Marketing Digital">${coreOpt}</optgroup>
+                                    <optgroup label="Otras Áreas Laborales">${otherOpt}</optgroup>
+                                    <optgroup label="Aptitudes Personales">${softOpt}</optgroup>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Nivel de Experiencia</label>
+                                <select id="skill-exp" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-semibold">
+                                    ${expOptions}
+                                </select>
+                            </div>
+                            <button onclick="addUserSkill()" class="bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-xs sm:text-bold hover:bg-emerald-700 active:scale-95 transition shadow-sm">+ Agregar Habilidad</button>
+                        </div>
+
+                        <div>
+                            <h4 class="text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-2">Habilidades Registradas:</h4>
+                            <div id="user-skills-badges" class="flex flex-wrap gap-1.5">
+                                <p class="text-xs text-slate-400 italic">Cargando habilidades...</p>
+                            </div>
+                        </div>
+                    </div>` : ''}
+                </div>
+            `;
+
+            if (state.role === 'candidate') { loadUserSkills(); }
+        }
+
+        async function loadUserSkills() {
+            const badgesContainer = document.getElementById('user-skills-badges');
+            if (!badgesContainer) return;
+
             try {
-                const res = await fetch(`${API_URL}/profile`, {
+                const res = await fetch(`${API_URL}/skills`, {
                     headers: { 'Authorization': `Bearer ${state.token}` }
                 });
-                const data = await res.json();
-                if (!res.ok) {
-                    container.innerHTML = `<p class="text-center py-10 text-rose-600 text-xs">Error al cargar perfil.</p>`;
+                const skills = await res.json();
+
+                if (!skills || skills.length === 0) {
+                    badgesContainer.innerHTML = `<span class="text-xs text-slate-400 italic">No has agregado habilidades aún.</span>`;
                     return;
                 }
 
-                container.innerHTML = `
-                    <div class="max-w-xl mx-auto bg-white p-5 sm:p-8 rounded-2xl shadow-sm border border-slate-200">
-                        <h2 class="text-lg font-extrabold text-slate-900 mb-4">Mi Perfil</h2>
-                        <div class="space-y-3">
-                            <p class="text-xs"><strong>Nombre:</strong> ${data.name || state.name}</p>
-                            <p class="text-xs"><strong>Correo:</strong> ${data.email || 'N/A'}</p>
-                            <p class="text-xs"><strong>Teléfono:</strong> ${data.telefono || 'No especificado'}</p>
-                            <p class="text-xs"><strong>Rol:</strong> ${state.role === 'employer' ? 'Empleador' : 'Candidato'}</p>
-                        </div>
-                    </div>
-                `;
-            } catch (err) {
-                console.error(err);
-            }
+                badgesContainer.innerHTML = skills.map(s => `
+                    <span class="bg-blue-50 text-blue-700 border border-blue-200/80 text-[11px] px-3 py-1 rounded-xl font-bold flex items-center gap-1.5">
+                        ⚡ ${s.skill_name}
+                        <button onclick="removeSkill(${s.id})" class="text-rose-500 hover:text-rose-700 font-bold ml-0.5">✕</button>
+                    </span>
+                `).join('');
+            } catch (err) { console.error(err); }
+        }
+
+        async function removeSkill(skillId) {
+            try {
+                const res = await fetch(`${API_URL}/skills/${skillId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${state.token}` }
+                });
+                if (res.ok) { loadUserSkills(); }
+            } catch (err) { console.error(err); }
+        }
+
+        async function addUserSkill() {
+            const skill_name = document.getElementById('skill-name').value;
+            const experience_years = document.getElementById('skill-exp').value;
+
+            try {
+                const res = await fetch(`${API_URL}/skills`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${state.token}`
+                    },
+                    body: JSON.stringify({ skill_name, experience_years: parseInt(experience_years) })
+                });
+                const data = await res.json();
+                if (res.ok) { loadUserSkills(); } else { showToast(data.error, 'error'); }
+            } catch (err) { console.error(err); }
+        }
+
+        async function handleUpdateProfile(e) {
+            e.preventDefault();
+            const name = document.getElementById('prof-name').value;
+            const location = document.getElementById('prof-location').value;
+
+            try {
+                const res = await fetch(`${API_URL}/profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${state.token}`
+                    },
+                    body: JSON.stringify({ name, location, profile_picture: tempProfilePicBase64 })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('name', data.user.name);
+                    localStorage.setItem('location', data.user.location);
+                    localStorage.setItem('profile_picture', data.user.profile_picture);
+                    state.name = data.user.name;
+                    state.location = data.user.location;
+                    state.profile_picture = data.user.profile_picture;
+                    showToast('¡Perfil actualizado con éxito!');
+                    renderProfile(document.getElementById('main-content'));
+                    updateNav();
+                } else { showToast(data.error, 'error'); }
+            } catch (err) { console.error(err); }
         }
 
         async function renderEmployerJobs(container) {
             container.innerHTML = `
-                <div class="mb-4 flex justify-between items-center">
-                    <h2 class="text-lg font-extrabold text-slate-900">Mis Vacantes Publicadas</h2>
-                    <button onclick="navigate('create-job')" class="bg-blue-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold">Nueva Vacante</button>
+                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5 animate-fade-in">
+                    <div>
+                        <h2 class="text-lg sm:text-2xl font-extrabold tracking-tight text-slate-900">Mis Vacantes</h2>
+                        <p class="text-[11px] sm:text-xs text-slate-500 font-medium">Gestiona tus ofertas activas.</p>
+                    </div>
+                    <button onclick="navigate('create-job')" class="w-full sm:w-auto bg-blue-600 text-white px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold hover:bg-blue-700 active:scale-95 transition shadow-sm">+ Nueva Vacante</button>
                 </div>
                 <div id="employer-jobs-list" class="space-y-3">
-                    <p class="text-xs text-slate-500">Cargando tus vacantes...</p>
+                    <p class="text-slate-500 text-center py-10 bg-white rounded-2xl border border-slate-200 text-xs">Cargando vacantes...</p>
                 </div>
             `;
+
             try {
                 const res = await fetch(`${API_URL}/employer/jobs`, {
                     headers: { 'Authorization': `Bearer ${state.token}` }
                 });
                 const jobs = await res.json();
-                const list = document.getElementById('employer-jobs-list');
+                const listContainer = document.getElementById('employer-jobs-list');
 
                 if (!jobs || jobs.length === 0) {
-                    list.innerHTML = `<p class="text-xs text-slate-500">No has publicado ninguna vacante.</p>`;
+                    listContainer.innerHTML = `<p class="text-slate-500 text-center py-10 bg-white rounded-2xl border border-slate-200 text-xs font-medium">No has publicado vacantes aún.</p>`;
                     return;
                 }
 
-                list.innerHTML = jobs.map(j => `
-                    <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                        <div>
-                            <h3 class="font-extrabold text-sm text-slate-900">${j.title}</h3>
-                            <p class="text-[11px] text-slate-500">📍 ${j.location || 'N/A'} • ${j.salary_range || 'A convenir'}</p>
+                let html = '';
+                jobs.forEach(job => {
+                    html += `
+                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col gap-3">
+                            <div class="flex justify-between items-start gap-2">
+                                <div>
+                                    <h3 class="text-sm sm:text-base font-extrabold text-slate-900">${job.title}</h3>
+                                    <p class="text-[11px] text-slate-500 mt-0.5 font-medium">Ubicación: ${job.location || 'N/A'}</p>
+                                </div>
+                                <div>${getModalityBadge(job.modality)}</div>
+                            </div>
+                            <div class="grid grid-cols-3 gap-1.5 pt-1">
+                                <button onclick="viewApplicants(${job.id})" class="bg-emerald-50 text-emerald-700 border border-emerald-200/60 py-2 rounded-xl text-[10px] sm:text-xs font-bold hover:bg-emerald-100 transition text-center">Candidatos</button>
+                                <button onclick="navigate('edit-job', ${job.id})" class="bg-amber-50 text-amber-700 border border-amber-200/60 py-2 rounded-xl text-[10px] sm:text-xs font-bold hover:bg-amber-100 transition text-center">Editar</button>
+                                <button onclick="deleteJob(${job.id})" class="bg-rose-50 text-rose-600 border border-rose-200/60 py-2 rounded-xl text-[10px] sm:text-xs font-bold hover:bg-rose-100 transition text-center">Eliminar</button>
+                            </div>
                         </div>
-                        <div class="flex gap-2">
-                            <button onclick="viewApplicants(${j.id})" class="bg-emerald-600 text-white px-3 py-1.5 rounded-xl text-xs font-bold hover:bg-emerald-700">Ver Postulados</button>
-                        </div>
-                    </div>
-                `).join('');
-            } catch (err) {
-                console.error(err);
-            }
+                    `;
+                });
+                listContainer.innerHTML = html;
+            } catch (err) { console.error(err); }
         }
 
         function renderCreateJob(container) {
+            selectedJobRequirements = [];
+            let academicOpt = ACADEMIC_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+            let coreOpt = CORE_CATEGORIES.map(s => `<option value="${s}">${s}</option>`).join('');
+            let otherOpt = OTHER_AREAS_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+            let softOpt = SOFT_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+            let locationOptions = LOCATIONS_LIST.map(l => `<option value="${l}">${l}</option>`).join('');
+
             container.innerHTML = `
-                <div class="max-w-xl mx-auto bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                    <h2 class="text-lg font-extrabold text-slate-900 mb-4">Publicar Nueva Vacante</h2>
-                    <form onsubmit="handleCreateJob(event)" class="space-y-3">
+                <div class="max-w-2xl mx-auto bg-white p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80 animate-fade-in">
+                    <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 mb-1">Publicar Vacante</h2>
+                    <p class="text-[11px] sm:text-xs text-slate-500 mb-5 font-medium">Define los requisitos para el Smart Screening.</p>
+                    <form onsubmit="handleCreateJob(event)" class="space-y-3.5">
                         <div>
-                            <label class="block text-[10px] font-bold text-slate-700 uppercase mb-1">Título del Puesto</label>
-                            <input type="text" id="job-title" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs">
+                            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Título del Puesto</label>
+                            <input type="text" id="job-title" placeholder="Ej: Especialista en Ventas" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Modalidad</label>
+                                <select id="job-modality" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-semibold">
+                                    <option value="presencial">🏛️ Presencial</option>
+                                    <option value="remoto">💻 Remoto</option>
+                                    <option value="hibrido">⚡ Híbrido</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Ubicación / Sector</label>
+                                <select id="job-location" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-semibold">
+                                    ${locationOptions}
+                                </select>
+                            </div>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-bold text-slate-700 uppercase mb-1">Descripción</label>
-                            <textarea id="job-desc" required rows="4" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs"></textarea>
+                            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Rango Salarial</label>
+                            <input type="text" id="job-salary" placeholder="Ej: $40,000 - $60,000 DOP" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-bold text-slate-700 uppercase mb-1">Modalidad</label>
-                            <select id="job-modality" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs">
-                                <option value="presencial">Presencial</option>
-                                <option value="remoto">Remoto</option>
-                                <option value="hibrido">Híbrido</option>
-                            </select>
+                            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Descripción del Puesto</label>
+                            <textarea id="job-desc" rows="3" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600"></textarea>
                         </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-700 uppercase mb-1">Ubicación</label>
-                            <input type="text" id="job-loc" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs">
+                        
+                        <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80">
+                            <label class="block text-[10px] font-bold text-slate-800 uppercase tracking-wider mb-2">Añadir Requisitos Exigidos</label>
+                            <div class="flex flex-col sm:flex-row gap-2 mb-2.5">
+                                <select id="req-skill-select" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-semibold">
+                                    <optgroup label="Nivel Académico">${academicOpt}</optgroup>
+                                    <optgroup label="Informática & Marketing Digital">${coreOpt}</optgroup>
+                                    <optgroup label="Otras Áreas Laborales">${otherOpt}</optgroup>
+                                    <optgroup label="Aptitudes Personales">${softOpt}</optgroup>
+                                </select>
+                                <button type="button" onclick="addRequirementToJob()" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-emerald-700 active:scale-95 transition shrink-0">Añadir</button>
+                            </div>
+                            <div id="job-reqs-badges" class="flex flex-wrap gap-1.5">
+                                <span class="text-xs text-slate-400 italic">No has añadido requisitos.</span>
+                            </div>
                         </div>
-                        <div>
-                            <label class="block text-[10px] font-bold text-slate-700 uppercase mb-1">Rango Salarial</label>
-                            <input type="text" id="job-salary" placeholder="Ej. $30,000 - $45,000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs">
-                        </div>
-                        <button type="submit" class="w-full bg-blue-600 text-white py-2.5 rounded-xl text-xs font-bold hover:bg-blue-700 mt-2">Publicar Vacante</button>
+
+                        <button type="submit" class="w-full bg-blue-600 text-white py-3 rounded-xl text-xs sm:text-sm font-bold hover:bg-blue-700 active:scale-95 transition shadow-sm">Publicar Vacante</button>
                     </form>
                 </div>
             `;
         }
 
+        function addRequirementToJob() {
+            const select = document.getElementById('req-skill-select');
+            const val = select.value;
+            if (val && !selectedJobRequirements.includes(val)) {
+                selectedJobRequirements.push(val);
+                renderJobReqBadges();
+            }
+        }
+
+        function removeRequirementFromJob(skill) {
+            selectedJobRequirements = selectedJobRequirements.filter(s => s !== skill);
+            renderJobReqBadges();
+        }
+
+        function renderJobReqBadges() {
+            const container = document.getElementById('job-reqs-badges');
+            if (!container) return;
+
+            if (selectedJobRequirements.length === 0) {
+                container.innerHTML = `<span class="text-xs text-slate-400 italic">No has añadido requisitos.</span>`;
+                return;
+            }
+
+            container.innerHTML = selectedJobRequirements.map(s => `
+                <span class="bg-blue-50 text-blue-700 border border-blue-200 text-[11px] px-3 py-1 rounded-xl font-bold flex items-center gap-1">
+                    ⚡ ${s}
+                    <button type="button" onclick="removeRequirementFromJob('${s}')" class="text-rose-500 font-bold ml-1">✕</button>
+                </span>
+            `).join('');
+        }
+
         async function handleCreateJob(e) {
             e.preventDefault();
             const title = document.getElementById('job-title').value;
-            const description = document.getElementById('job-desc').value;
             const modality = document.getElementById('job-modality').value;
-            const location = document.getElementById('job-loc').value;
+            const location = document.getElementById('job-location').value;
             const salary_range = document.getElementById('job-salary').value;
+            const description = document.getElementById('job-desc').value;
 
             try {
                 const res = await fetch(`${API_URL}/jobs`, {
@@ -715,25 +948,156 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${state.token}`
                     },
-                    body: JSON.stringify({ title, description, modality, location, salary_range })
+                    body: JSON.stringify({ title, modality, location, salary_range, description, requirements: selectedJobRequirements })
                 });
+                const data = await res.json();
                 if (res.ok) {
                     showToast('¡Vacante publicada con éxito!');
                     navigate('my-jobs');
-                } else {
-                    showToast('Error al publicar vacante', 'error');
-                }
-            } catch (err) {
-                console.error(err);
-            }
+                } else { showToast(data.error, 'error'); }
+            } catch (err) { console.error(err); }
         }
 
-        function renderEditJob(container, jobId) {
-            container.innerHTML = `<p class="text-xs text-slate-500 text-center py-10">Función de edición en desarrollo</p>`;
+        async function renderEditJob(container, jobId) {
+            try {
+                const res = await fetch(`${API_URL}/jobs/${jobId}`, {
+                    headers: { 'Authorization': `Bearer ${state.token}` }
+                });
+                const data = await res.json();
+                const job = data.job;
+                const existingReqs = data.requirements || [];
+
+                selectedJobRequirements = existingReqs.map(r => r.skill_name);
+
+                let academicOpt = ACADEMIC_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+                let coreOpt = CORE_CATEGORIES.map(s => `<option value="${s}">${s}</option>`).join('');
+                let otherOpt = OTHER_AREAS_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+                let softOpt = SOFT_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+                let locationOptions = LOCATIONS_LIST.map(l => `<option value="${l}" ${job.location === l ? 'selected' : ''}>${l}</option>`).join('');
+
+                container.innerHTML = `
+                    <div class="max-w-2xl mx-auto bg-white p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80 animate-fade-in">
+                        <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 mb-5">Editar Vacante</h2>
+                        <form onsubmit="handleEditJob(event, ${job.id})" class="space-y-3.5">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Título del Puesto</label>
+                                <input type="text" id="edit-title" value="${job.title}" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+                            </div>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Modalidad</label>
+                                    <select id="edit-modality" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-semibold">
+                                        <option value="presencial" ${job.modality === 'presencial' ? 'selected' : ''}>🏛️ Presencial</option>
+                                        <option value="remoto" ${job.modality === 'remoto' ? 'selected' : ''}>💻 Remoto</option>
+                                        <option value="hibrido" ${job.modality === 'hibrido' ? 'selected' : ''}>⚡ Híbrido</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Ubicación / Sector</label>
+                                    <select id="edit-location" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-semibold">
+                                        ${locationOptions}
+                                    </select>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Rango Salarial</label>
+                                <input type="text" id="edit-salary" value="${job.salary_range || ''}" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Descripción</label>
+                                <textarea id="edit-desc" rows="3" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">${job.description}</textarea>
+                            </div>
+
+                            <div class="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80">
+                                <label class="block text-[10px] font-bold text-slate-800 uppercase tracking-wider mb-2">Habilidades Requeridas</label>
+                                <div class="flex flex-col sm:flex-row gap-2 mb-2.5">
+                                    <select id="req-skill-select" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-semibold">
+                                        <optgroup label="Nivel Académico">${academicOpt}</optgroup>
+                                        <optgroup label="Informática & Marketing Digital">${coreOpt}</optgroup>
+                                        <optgroup label="Otras Áreas Laborales">${otherOpt}</optgroup>
+                                        <optgroup label="Aptitudes Personales">${softOpt}</optgroup>
+                                    </select>
+                                    <button type="button" onclick="addRequirementToJob()" class="bg-emerald-600 text-white px-4 py-2 rounded-xl text-xs font-bold hover:bg-emerald-700 active:scale-95 transition shrink-0">Añadir</button>
+                                </div>
+                                <div id="job-reqs-badges" class="flex flex-wrap gap-1.5"></div>
+                            </div>
+
+                            <div class="flex flex-col sm:flex-row gap-2.5 pt-2">
+                                <button type="submit" class="w-full sm:flex-grow bg-blue-600 text-white py-3 rounded-xl text-xs sm:text-sm font-bold hover:bg-blue-700 active:scale-95 transition shadow-sm">Guardar Cambios</button>
+                                <button type="button" onclick="navigate('my-jobs')" class="w-full sm:w-auto bg-slate-200 text-slate-700 px-5 py-3 rounded-xl text-xs sm:text-sm font-bold hover:bg-slate-300 active:scale-95 transition">Cancelar</button>
+                            </div>
+                        </form>
+                    </div>
+                `;
+                renderJobReqBadges();
+            } catch (err) { console.error(err); }
         }
 
-        // Inicializar la app en la vista de inicio
-        render();
+        async function handleEditJob(e, jobId) {
+            e.preventDefault();
+            const title = document.getElementById('edit-title').value;
+            const modality = document.getElementById('edit-modality').value;
+            const location = document.getElementById('edit-location').value;
+            const salary_range = document.getElementById('edit-salary').value;
+            const description = document.getElementById('edit-desc').value;
+
+            try {
+                const res = await fetch(`${API_URL}/jobs/${jobId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${state.token}`
+                    },
+                    body: JSON.stringify({ title, modality, location, salary_range, description, requirements: selectedJobRequirements })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast('¡Vacante actualizada correctamente!');
+                    navigate('my-jobs');
+                } else { showToast(data.error, 'error'); }
+            } catch (err) { console.error(err); }
+        }
+
+        async function deleteJob(jobId) {
+            if (!confirm('¿Deseas eliminar esta vacante?')) return;
+            try {
+                const res = await fetch(`${API_URL}/jobs/${jobId}`, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': `Bearer ${state.token}` }
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    showToast(data.message);
+                    renderEmployerJobs(document.getElementById('main-content'));
+                } else { showToast(data.error, 'error'); }
+            } catch (err) { console.error(err); }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => { 
+            render(); 
+        });
+        /**
+ * Muestra una notificación flotante que desaparece sola.
+ * @param {string} message - El mensaje que verá el usuario.
+ * @param {string} type - 'success' (verde) o 'error' (rojo). Por defecto es 'success'.
+ */
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `custom-toast ${type}`;
+  toast.innerText = message;
+
+  container.appendChild(toast);
+
+  // Se elimina automáticamente del DOM después de 3 segundos (3000ms)
+  setTimeout(() => {
+    toast.remove();
+  }, 3000);
+}
     </script>
+    <!-- Contenedor para los mensajes flotantes (Toasts) -->
+<div id="toast-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;"></div>
 </body>
 </html>
