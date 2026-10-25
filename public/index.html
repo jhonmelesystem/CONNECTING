@@ -20,6 +20,92 @@
         .animate-fade-in {
             animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
+        /* Tarjeta del candidato */
+.candidato-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+
+.candidato-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
+}
+
+.candidato-nombre {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #1e293b;
+}
+
+.candidato-fecha {
+    font-size: 0.85rem;
+    color: #64748b;
+}
+
+.candidato-detalles p {
+    margin: 4px 0;
+    font-size: 0.95rem;
+    color: #334155;
+}
+
+/* Contenedor y Botones de Contacto */
+.candidato-acciones {
+    display: flex;
+    gap: 10px;
+    margin-top: 14px;
+    flex-wrap: wrap;
+}
+
+.btn-contacto {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 9px 15px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+    color: #ffffff;
+    transition: background-color 0.2s ease, transform 0.1s ease;
+    flex: 1;
+    min-width: 160px;
+    text-align: center;
+}
+
+.btn-contacto:active {
+    transform: scale(0.97);
+}
+
+/* WhatsApp (Verde Oficial) */
+.btn-whatsapp {
+    background-color: #25D366;
+}
+.btn-whatsapp:hover {
+    background-color: #1ebc57;
+}
+
+/* Correo (Azul) */
+.btn-email {
+    background-color: #2563eb;
+}
+.btn-email:hover {
+    background-color: #1d4ed8;
+}
+
+.sin-candidatos {
+    text-align: center;
+    color: #64748b;
+    padding: 20px;
+}
     </style>
 </head>
 <body class="h-full bg-slate-50 text-slate-900 flex flex-col selection:bg-blue-600 selection:text-white antialiased">
@@ -446,19 +532,44 @@
                         ? c.skills.map(s => `<span class="bg-blue-50 text-blue-700 text-[10px] px-2 py-0.5 rounded-lg border border-blue-200/60 font-bold">⚡ ${s.skill_name}</span>`).join('')
                         : '<span class="text-[11px] text-slate-400 italic">Sin habilidades</span>';
 
+                    // Limpiamos el teléfono para WhatsApp (solo números)
+                    const telefonoLimpio = c.telefono ? c.telefono.replace(/\D/g, '') : '';
+                    
+                    // Mensaje predeterminado para WhatsApp
+                    const mensajeWS = encodeURIComponent(
+                        `Hola ${candidato.nombre}, vimos tu postulación en CONNECTING y nos gustaría ponernos en contacto contigo.`
+                    );
+
                     return `
-                        <div class="bg-white p-3.5 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col gap-2.5">
+                        <div class="candidato-card">
                             <div class="flex items-center gap-3">
                                 ${c.profile_picture ? `<img src="${c.profile_picture}" class="w-10 h-10 rounded-xl object-cover border shrink-0">` : '<div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-slate-600 text-xs shrink-0">👤</div>'}
                                 <div class="min-w-0">
                                     <h4 class="font-extrabold text-slate-900 text-xs sm:text-sm truncate">${c.name}</h4>
                                     <p class="text-[11px] text-slate-500 truncate">📧 ${c.email}</p>
+                                    <p class="text-[11px] text-slate-500 truncate">📞 ${c.telefono || 'No especificado'}</p>
                                     <p class="text-[9px] text-emerald-600 font-bold mt-0.5">✅ Smart Screening Superado (85%+)</p>
                                 </div>
                             </div>
-                            <div>
+                            <div class="mt-2">
                                 <p class="text-[10px] font-bold text-slate-600 mb-1">Habilidades:</p>
                                 <div class="flex flex-wrap gap-1">${skillsBadges}</div>
+                            </div>
+                            
+                            <!-- Botones de Contacto Directo -->
+                            <div class="candidato-acciones">
+                                ${telefonoLimpio ? `
+                                    <a href="https://wa.me/${telefonoLimpio}?text=${mensajeWS}" 
+                                       target="_blank" 
+                                       rel="noopener noreferrer" 
+                                       class="btn-contacto btn-whatsapp">
+                                        💬 WhatsApp
+                                    </a>
+                                ` : ''}
+                                <a href="mailto:${c.email}?subject=Postulación en CONNECTING&body=Hola ${c.name}," 
+                                   class="btn-contacto btn-email">
+                                    ✉️ Correo
+                                </a>
                             </div>
                         </div>
                     `;
@@ -474,7 +585,7 @@
                 `;
             } catch (err) { console.error(err); }
         }
-
+        
         function renderLogin(container) {
             container.innerHTML = `
                 <div class="max-w-md mx-auto bg-white p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80 mt-4 animate-fade-in">
