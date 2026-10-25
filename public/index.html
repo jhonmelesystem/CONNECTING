@@ -532,42 +532,42 @@
                         ? c.skills.map(s => `<span class="bg-blue-50 text-blue-700 text-[10px] px-2 py-0.5 rounded-lg border border-blue-200/60 font-bold">⚡ ${s.skill_name}</span>`).join('')
                         : '<span class="text-[11px] text-slate-400 italic">Sin habilidades</span>';
 
-                    // Limpiamos el teléfono para WhatsApp (solo números)
+                    // Limpiamos el número de teléfono para WhatsApp (dejamos solo dígitos)
                     const telefonoLimpio = c.telefono ? c.telefono.replace(/\D/g, '') : '';
                     
-                    // Mensaje predeterminado para WhatsApp
                     const mensajeWS = encodeURIComponent(
-                        `Hola ${candidato.nombre}, vimos tu postulación en CONNECTING y nos gustaría ponernos en contacto contigo.`
+                        `Hola ${c.name}, vimos tu postulación en CONNECTING y nos gustaría ponernos en contacto contigo.`
                     );
 
                     return `
-                        <div class="candidato-card">
+                        <div class="bg-white p-4 rounded-2xl border border-slate-200/80 shadow-sm flex flex-col gap-3 mb-3">
                             <div class="flex items-center gap-3">
                                 ${c.profile_picture ? `<img src="${c.profile_picture}" class="w-10 h-10 rounded-xl object-cover border shrink-0">` : '<div class="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center font-bold text-slate-600 text-xs shrink-0">👤</div>'}
                                 <div class="min-w-0">
                                     <h4 class="font-extrabold text-slate-900 text-xs sm:text-sm truncate">${c.name}</h4>
                                     <p class="text-[11px] text-slate-500 truncate">📧 ${c.email}</p>
-                                    <p class="text-[11px] text-slate-500 truncate">📞 ${c.telefono || 'No especificado'}</p>
+                                    <p class="text-[11px] text-slate-500 truncate">📞 WhatsApp: ${c.telefono || 'No especificado'}</p>
                                     <p class="text-[9px] text-emerald-600 font-bold mt-0.5">✅ Smart Screening Superado (85%+)</p>
                                 </div>
                             </div>
-                            <div class="mt-2">
+                            <div>
                                 <p class="text-[10px] font-bold text-slate-600 mb-1">Habilidades:</p>
                                 <div class="flex flex-wrap gap-1">${skillsBadges}</div>
                             </div>
                             
-                            <!-- Botones de Contacto Directo -->
-                            <div class="candidato-acciones">
+                            <!-- Botones de Contacto Directo para el Empleador -->
+                            <div class="flex gap-2 pt-2 border-t border-slate-100">
                                 ${telefonoLimpio ? `
                                     <a href="https://wa.me/${telefonoLimpio}?text=${mensajeWS}" 
                                        target="_blank" 
                                        rel="noopener noreferrer" 
-                                       class="btn-contacto btn-whatsapp">
+                                       class="flex-1 bg-emerald-500 hover:bg-emerald-600 text-white text-center py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
                                         💬 WhatsApp
                                     </a>
-                                ` : ''}
+                                ` : '<span class="text-[10px] text-slate-400 italic self-center">Sin WhatsApp registrado</span>'}
+                                
                                 <a href="mailto:${c.email}?subject=Postulación en CONNECTING&body=Hola ${c.name}," 
-                                   class="btn-contacto btn-email">
+                                   class="flex-1 bg-blue-600 hover:bg-blue-700 text-white text-center py-2 px-3 rounded-xl text-xs font-bold transition flex items-center justify-center gap-1.5 shadow-sm">
                                     ✉️ Correo
                                 </a>
                             </div>
@@ -706,6 +706,20 @@
 
         async function renderProfile(container) {
             tempProfilePicBase64 = state.profile_picture;
+            
+            // Intentamos obtener los datos más recientes del servidor (incluyendo el teléfono)
+            let currentTelefono = state.telefono || '';
+            try {
+                const resProfile = await fetch(`${API_URL}/profile`, {
+                    headers: { 'Authorization': `Bearer ${state.token}` }
+                });
+                if (resProfile.ok) {
+                    const profileData = await resProfile.json();
+                    currentTelefono = profileData.telefono || '';
+                    state.telefono = currentTelefono;
+                }
+            } catch (e) { console.error(e); }
+
             let locationOptions = LOCATIONS_LIST.map(l => `<option value="${l}" ${state.location === l ? 'selected' : ''}>${l}</option>`).join('');
             
             let academicOpt = ACADEMIC_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
@@ -738,8 +752,8 @@
                             </div>
                             <div>
                                 <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Mi WhatsApp de Contacto</label>
-                                <input type="text" id="profile-telefono" value="${data.telefono || ''}" placeholder="Ej. 8095551234" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
-                                <p class="text-[10px] text-slate-400 mt-1">Las empresas usarán este número para contactarte directamente por WhatsApp cuando apliques a sus vacantes.</p>
+                                <input type="text" id="prof-telefono" value="${currentTelefono}" placeholder="Ej. 8095551234" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+                                <span class="text-[10px] text-slate-400 mt-1 block font-medium">Las empresas usarán este número para contactarte directamente por WhatsApp cuando apliques a sus vacantes.</span>
                             </div>
                             <button type="submit" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold hover:bg-blue-700 active:scale-95 transition shadow-sm">Guardar Cambios</button>
                         </form>
@@ -838,6 +852,7 @@
             e.preventDefault();
             const name = document.getElementById('prof-name').value;
             const location = document.getElementById('prof-location').value;
+            const telefono = document.getElementById('prof-telefono').value;
 
             try {
                 const res = await fetch(`${API_URL}/profile`, {
@@ -846,71 +861,32 @@
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${state.token}`
                     },
-                    body: JSON.stringify({ name, location, profile_picture: tempProfilePicBase64 })
+                    body: JSON.stringify({ 
+                        name, 
+                        location, 
+                        telefono, 
+                        profile_picture: tempProfilePicBase64 
+                    })
                 });
                 const data = await res.json();
                 if (res.ok) {
                     localStorage.setItem('name', data.user.name);
                     localStorage.setItem('location', data.user.location);
+                    localStorage.setItem('telefono', data.user.telefono || '');
                     localStorage.setItem('profile_picture', data.user.profile_picture);
+
                     state.name = data.user.name;
                     state.location = data.user.location;
+                    state.telefono = data.user.telefono || '';
                     state.profile_picture = data.user.profile_picture;
+
                     alert('¡Perfil actualizado con éxito!');
                     renderProfile(document.getElementById('main-content'));
                     updateNav();
                 } else { alert(data.error); }
             } catch (err) { console.error(err); }
         }
-
-        async function renderEmployerJobs(container) {
-            container.innerHTML = `
-                <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5 animate-fade-in">
-                    <div>
-                        <h2 class="text-lg sm:text-2xl font-extrabold tracking-tight text-slate-900">Mis Vacantes</h2>
-                        <p class="text-[11px] sm:text-xs text-slate-500 font-medium">Gestiona tus ofertas activas.</p>
-                    </div>
-                    <button onclick="navigate('create-job')" class="w-full sm:w-auto bg-blue-600 text-white px-4 py-2.5 rounded-xl text-xs sm:text-sm font-bold hover:bg-blue-700 active:scale-95 transition shadow-sm">+ Nueva Vacante</button>
-                </div>
-                <div id="employer-jobs-list" class="space-y-3">
-                    <p class="text-slate-500 text-center py-10 bg-white rounded-2xl border border-slate-200 text-xs">Cargando vacantes...</p>
-                </div>
-            `;
-
-            try {
-                const res = await fetch(`${API_URL}/employer/jobs`, {
-                    headers: { 'Authorization': `Bearer ${state.token}` }
-                });
-                const jobs = await res.json();
-                const listContainer = document.getElementById('employer-jobs-list');
-
-                if (!jobs || jobs.length === 0) {
-                    listContainer.innerHTML = `<p class="text-slate-500 text-center py-10 bg-white rounded-2xl border border-slate-200 text-xs font-medium">No has publicado vacantes aún.</p>`;
-                    return;
-                }
-
-                let html = '';
-                jobs.forEach(job => {
-                    html += `
-                        <div class="bg-white p-4 rounded-2xl shadow-sm border border-slate-200/80 flex flex-col gap-3">
-                            <div class="flex justify-between items-start gap-2">
-                                <div>
-                                    <h3 class="text-sm sm:text-base font-extrabold text-slate-900">${job.title}</h3>
-                                    <p class="text-[11px] text-slate-500 mt-0.5 font-medium">Ubicación: ${job.location || 'N/A'}</p>
-                                </div>
-                                <div>${getModalityBadge(job.modality)}</div>
-                            </div>
-                            <div class="grid grid-cols-3 gap-1.5 pt-1">
-                                <button onclick="viewApplicants(${job.id})" class="bg-emerald-50 text-emerald-700 border border-emerald-200/60 py-2 rounded-xl text-[10px] sm:text-xs font-bold hover:bg-emerald-100 transition text-center">Candidatos</button>
-                                <button onclick="navigate('edit-job', ${job.id})" class="bg-amber-50 text-amber-700 border border-amber-200/60 py-2 rounded-xl text-[10px] sm:text-xs font-bold hover:bg-amber-100 transition text-center">Editar</button>
-                                <button onclick="deleteJob(${job.id})" class="bg-rose-50 text-rose-600 border border-rose-200/60 py-2 rounded-xl text-[10px] sm:text-xs font-bold hover:bg-rose-100 transition text-center">Eliminar</button>
-                            </div>
-                        </div>
-                    `;
-                });
-                listContainer.innerHTML = html;
-            } catch (err) { console.error(err); }
-        }
+        
 
         function renderCreateJob(container) {
             selectedJobRequirements = [];
