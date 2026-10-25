@@ -20,6 +20,49 @@
         .animate-fade-in {
             animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
         }
+        /* Estilos para los mensajes flotantes automáticos */
+.custom-toast {
+  background-color: #1e1e1e;
+  color: #ffffff;
+  padding: 12px 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0;
+  transform: translateY(20px);
+  animation: toastSlideIn 0.3s forwards, toastFadeOut 0.3s 2.7s forwards;
+  pointer-events: auto;
+  max-width: 300px;
+  word-break: break-word;
+}
+
+.custom-toast.success {
+  background-color: #10b981; /* Verde moderno para éxito */
+}
+
+.custom-toast.error {
+  background-color: #ef4444; /* Rojo moderno para errores */
+}
+
+@keyframes toastSlideIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes toastFadeOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+}
     </style>
 </head>
 <body class="h-full bg-slate-50 text-slate-900 flex flex-col selection:bg-blue-600 selection:text-white antialiased">
@@ -1033,6 +1076,28 @@
         document.addEventListener('DOMContentLoaded', () => { 
             render(); 
         });
+        /**
+ * Muestra una notificación flotante que desaparece sola.
+ * @param {string} message - El mensaje que verá el usuario.
+ * @param {string} type - 'success' (verde) o 'error' (rojo). Por defecto es 'success'.
+ */
+function showToast(message, type = 'success') {
+  const container = document.getElementById('toast-container');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `custom-toast ${type}`;
+  toast.innerText = message;
+
+  container.appendChild(toast);
+
+  // Se elimina automáticamente del DOM después de 3 segundos (3000ms)
+  setTimeout(() => {
+    toast.remove();
+  }, 3000);
+}
     </script>
+    <!-- Contenedor para los mensajes flotantes (Toasts) -->
+<div id="toast-container" style="position: fixed; bottom: 20px; right: 20px; z-index: 99999; display: flex; flex-direction: column; gap: 10px; pointer-events: none;"></div>
 </body>
 </html>
