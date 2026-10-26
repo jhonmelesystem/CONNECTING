@@ -67,25 +67,88 @@ function checkSkillMatch(candidateSkills, requirementSkill) {
 
 // ==================== AUTH & PERFIL ====================
 
+// 1. REGISTRO DE USUARIOS (Soporta Aplicante y Empleador)
 app.post('/api/register', async (req, res) => {
-  const { name, email, password, role, location, profile_picture } = req.body;
-  if (!name || !email || !password || !role) {
-    return res.status(400).json({ error: 'Faltan campos obligatorios' });
-  }
+    const { name, email, password, role, location } = req.body;
+    const userRole = (role === 'employer') ? 'employer' : 'candidate';
+    
+    try {
+        // Verificar si el correo ya existe
+        const [existing] = await db.query('SELECT id FROM users WHERE email = ?', [email]);
+        if (existing.length > 0) {
+            return res.status(400).json({ error: 'El correo electrónico ya está registrado' });
+        }
 
-  try {
-    const hashedPassword = await bcrypt.hash(password, 8);
-    const [result] = await db.query(
-      `INSERT INTO users (name, email, password, role, location, profile_picture) VALUES (?, ?, ?, ?, ?, ?)`,
-      [name, email, hashedPassword, role, location || '', profile_picture || '']
-    );
-    res.json({ message: 'Usuario registrado con éxito', userId: result.insertId });
-  } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') {
-      return res.status(400).json({ error: 'El correo electrónico ya está registrado' });
+        const hashedPassword = await bcrypt.hash(password, 10);
+        
+        await db.query(
+            'INSERT INTO users (name, email, password, role, location, telefono) VALUES (?, ?, ?, ?, ?, ?)',
+            [name, email, hashedPassword, userRole, location || 'Santo Domingo, Distrito Nacional', '']
+        );
+
+        res.json({ message: '¡Registro exitoso! Ya puedes iniciar sesión.' });
+    } catch (err) {
+        console.error("❌ Error en registro:", err);
+        res.status(500).json({ error: 'Error del servidor al registrar' });
     }
-    res.status(500).json({ error: err.message });
-  }
+});
+
+// 2. ACTUALIZAR PERFIL (Incluye Teléfono / WhatsApp)
+app.put('/api/profile', verifyToken, async (req, res) => {
+    const userId = req.id || req.user?.id;
+    const { name, location, telefono, profile_picture } = req.body;
+
+    try {
+        const updateQuery = `
+            UPDATE users 
+            SET name = ?, location = ?, telefono = ?, profile_picture = ? 
+            WHERE id = ?
+        `;
+
+        await db.query(updateQuery, [
+            name || '', 
+            location || '', 
+            telefono || '', 
+            profile_picture || '', 
+            userId
+        ]);
+
+        const [userRes] = await db.query(
+            'SELECT id, name, email, role, location, telefono, profile_picture FROM users WHERE id = ?', 
+            [userId]
+        );
+
+        if (!userRes || userRes.length === 0) {
+            return res.status(500).json({ error: 'Perfil actualizado pero no se pudo recuperar' });
+        }
+
+        res.json({ 
+            message: '¡Perfil actualizado con éxito!', 
+            user: userRes[0] 
+        });
+
+    } catch (err) {
+        console.error("❌ Error en PUT /api/profile:", err);
+        res.status(500).json({ error: 'Error del servidor al actualizar el perfil: ' + err.message });
+    }
+});
+
+// 3. OBTENER POSTULACIONES CON TELÉFONO DEL CANDIDATO
+app.get('/api/employer/jobs/:id/applications', verifyToken, async (req, res) => {
+    const jobId = req.params.id;
+    try {
+        const query = `
+            SELECT applications.*, users.name, users.email, users.telefono, users.profile_picture 
+            FROM applications 
+            JOIN users ON applications.candidate_id = users.id 
+            WHERE applications.job_id = ?
+        `;
+        const [results] = await db.query(query, [jobId]);
+        res.json(results);
+    } catch (err) { 
+        console.error("❌ Error al obtener aplicaciones:", err);
+        res.status(500).json({ error: 'Error en la base de datos' });
+    }
 });
 
 app.post('/api/login', async (req, res) => {
