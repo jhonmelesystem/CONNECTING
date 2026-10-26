@@ -568,56 +568,54 @@
                 } else { showToast(data.error, 'error'); }
             } catch (err) { console.error(err); }
         }
-function renderRegister(container) {
-    tempProfilePicBase64 = '';
-    let locationOptions = LOCATIONS_LIST.map(l => `<option value="${l}">${l}</option>`).join('');
 
-    container.innerHTML = `
-        <div class="max-w-md mx-auto bg-white p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80 mt-2 animate-fade-in">
-            <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 mb-1 text-center">Crear Cuenta</h2>
-            <p class="text-[11px] sm:text-xs text-slate-500 text-center mb-5 font-medium">Únete a la red de empleo inteligente</p>
-            <form onsubmit="handleRegister(event)" class="space-y-3.5">
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Nombre Completo / Empresa</label>
-                    <input type="text" id="reg-name" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+        function renderRegister(container) {
+            tempProfilePicBase64 = '';
+            let locationOptions = LOCATIONS_LIST.map(l => `<option value="${l}">${l}</option>`).join('');
+
+            container.innerHTML = `
+                <div class="max-w-md mx-auto bg-white p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80 mt-2 animate-fade-in">
+                    <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 mb-1 text-center">Crear Cuenta</h2>
+                    <p class="text-[11px] sm:text-xs text-slate-500 text-center mb-5 font-medium">Únete a la red de empleo inteligente</p>
+                    <form onsubmit="handleRegister(event)" class="space-y-3.5">
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Nombre Completo / Empresa</label>
+                            <input type="text" id="reg-name" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">WhatsApp / Teléfono de Contacto</label>
+                            <input type="text" id="reg-telefono" placeholder="Ej. 8095551234" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Correo Electrónico</label>
+                            <input type="email" id="reg-email" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Contraseña</label>
+                            <input type="password" id="reg-password" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Tipo de Cuenta</label>
+                            <select id="reg-role" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-semibold">
+                                <option value="candidate">Busco Empleo (Candidato)</option>
+                                <option value="employer">Deseo Publicar Empleos (Empleador)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Ubicación / Sector</label>
+                            <select id="reg-location" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-semibold">
+                                ${locationOptions}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Foto de Perfil</label>
+                            <input type="file" accept="image/*" onchange="handleImageUpload(event)" class="w-full text-[11px] text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-[11px] file:font-bold file:bg-blue-50 file:text-blue-700">
+                        </div>
+                        <button type="submit" class="w-full bg-emerald-600 text-white py-3 rounded-xl text-xs sm:text-sm font-bold hover:bg-emerald-700 active:scale-95 transition shadow-sm">Registrarse</button>
+                    </form>
                 </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">WhatsApp / Teléfono de Contacto</label>
-                    <input type="text" id="reg-telefono" placeholder="Ej. 8095551234" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Correo Electrónico</label>
-                    <input type="email" id="reg-email" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Contraseña</label>
-                    <div class="relative">
-                        <input type="password" id="reg-password" required placeholder="Mínimo 6 caracteres" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 pr-14 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
-                        <button type="button" onclick="togglePasswordVisibility('reg-password', 'toggle-reg-pass')" id="toggle-reg-pass" class="absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-blue-600 hover:text-blue-800 px-1 py-0.5">👁️ Ver</button>
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Tipo de Usuario</label>
-                    <select id="reg-role" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-semibold">
-                        <option value="candidate">Aplicante (Buscador de Empleo)</option>
-                        <option value="employer">Empleador / Empresa</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Ubicación / Sector</label>
-                    <select id="reg-location" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-semibold">
-                        ${locationOptions}
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Foto de Perfil</label>
-                    <input type="file" accept="image/*" onchange="handleImageUpload(event)" class="w-full text-[11px] text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-[11px] file:font-bold file:bg-blue-50 file:text-blue-700">
-                </div>
-                <button type="submit" class="w-full bg-emerald-600 text-white py-3 rounded-xl text-xs sm:text-sm font-bold hover:bg-emerald-700 active:scale-95 transition shadow-sm">Registrarse</button>
-            </form>
-        </div>
-    `;
-}
+            `;
+        }
 
         async function handleRegister(e) {
             e.preventDefault();
@@ -642,83 +640,79 @@ function renderRegister(container) {
             } catch (err) { console.error(err); }
         }
 
-async function renderProfile(container) {
-    tempProfilePicBase64 = state.profile_picture;
-    let locationOptions = LOCATIONS_LIST.map(l => `<option value="${l}" ${state.location === l ? 'selected' : ''}>${l}</option>`).join('');
-    
-    let academicOpt = ACADEMIC_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
-    let coreOpt = CORE_CATEGORIES.map(s => `<option value="${s}">${s}</option>`).join('');
-    let otherOpt = OTHER_AREAS_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
-    let softOpt = SOFT_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
-    let expOptions = EXPERIENCE_LEVELS.map(e => `<option value="${e.value}">${e.label}</option>`).join('');
+        async function renderProfile(container) {
+            tempProfilePicBase64 = state.profile_picture;
+            let locationOptions = LOCATIONS_LIST.map(l => `<option value="${l}" ${state.location === l ? 'selected' : ''}>${l}</option>`).join('');
+            
+            let academicOpt = ACADEMIC_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+            let coreOpt = CORE_CATEGORIES.map(s => `<option value="${s}">${s}</option>`).join('');
+            let otherOpt = OTHER_AREAS_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+            let softOpt = SOFT_SKILLS.map(s => `<option value="${s}">${s}</option>`).join('');
+            let expOptions = EXPERIENCE_LEVELS.map(e => `<option value="${e.value}">${e.label}</option>`).join('');
 
-    container.innerHTML = `
-        <div class="max-w-2xl mx-auto space-y-4 animate-fade-in">
-            <div class="bg-white p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80">
-                <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 mb-4">Mi Perfil</h2>
-                <form onsubmit="handleUpdateProfile(event)" class="space-y-3.5">
-                    <div class="flex items-center gap-3.5 mb-3">
-                        ${state.profile_picture ? `<img src="${state.profile_picture}" class="w-14 h-14 rounded-2xl object-cover border shadow-sm shrink-0">` : '<div class="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center font-bold text-lg text-white shadow-sm shrink-0">👤</div>'}
-                        <div class="min-w-0">
-                            <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Cambiar Foto</label>
-                            <input type="file" accept="image/*" onchange="handleImageUpload(event)" class="text-[11px] text-slate-500 truncate">
+            container.innerHTML = `
+                <div class="max-w-2xl mx-auto space-y-4 animate-fade-in">
+                    <div class="bg-white p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80">
+                        <h2 class="text-lg sm:text-xl font-extrabold text-slate-900 mb-4">Mi Perfil</h2>
+                        <form onsubmit="handleUpdateProfile(event)" class="space-y-3.5">
+                            <div class="flex items-center gap-3.5 mb-3">
+                                ${state.profile_picture ? `<img src="${state.profile_picture}" class="w-14 h-14 rounded-2xl object-cover border shadow-sm shrink-0">` : '<div class="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center font-bold text-lg text-white shadow-sm shrink-0">👤</div>'}
+                                <div class="min-w-0">
+                                    <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Cambiar Foto</label>
+                                    <input type="file" accept="image/*" onchange="handleImageUpload(event)" class="text-[11px] text-slate-500 truncate">
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Nombre / Empresa</label>
+                                <input type="text" id="prof-name" value="${state.name || ''}" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Ubicación / Sector</label>
+                                <select id="prof-location" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-semibold">
+                                    ${locationOptions}
+                                </select>
+                            </div>
+                            <button type="submit" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold hover:bg-blue-700 active:scale-95 transition shadow-sm">Guardar Cambios</button>
+                        </form>
+                    </div>
+
+                    ${state.role === 'candidate' ? `
+                    <div class="bg-white p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80">
+                        <h3 class="text-base sm:text-lg font-extrabold text-slate-900 mb-1">Mis Habilidades & Conocimientos</h3>
+                        <p class="text-[11px] sm:text-xs text-slate-500 mb-4 font-medium">Habilita el Smart Screening con tus aptitudes.</p>
+                        
+                        <div class="space-y-3.5 mb-5">
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Seleccionar Habilidad / Área</label>
+                                <select id="skill-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-semibold">
+                                    <optgroup label="Nivel Académico">${academicOpt}</optgroup>
+                                    <optgroup label="Informática & Marketing Digital">${coreOpt}</optgroup>
+                                    <optgroup label="Otras Áreas Laborales">${otherOpt}</optgroup>
+                                    <optgroup label="Aptitudes Personales">${softOpt}</optgroup>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Nivel de Experiencia</label>
+                                <select id="skill-exp" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-semibold">
+                                    ${expOptions}
+                                </select>
+                            </div>
+                            <button onclick="addUserSkill()" class="bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-xs sm:text-bold hover:bg-emerald-700 active:scale-95 transition shadow-sm">+ Agregar Habilidad</button>
                         </div>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Nombre / Empresa</label>
-                        <input type="text" id="prof-name" value="${state.name || ''}" required class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Mi WhatsApp de Contacto</label>
-                        <input type="text" id="prof-telefono" value="${state.telefono || ''}" placeholder="Ej. 8095551234" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600">
-                        <span class="text-[10px] text-slate-400 mt-1 block font-medium">Las empresas usarán este número para contactarte directamente por WhatsApp.</span>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Ubicación / Sector</label>
-                        <select id="prof-location" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-semibold">
-                            ${locationOptions}
-                        </select>
-                    </div>
-                    <button type="submit" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl text-xs sm:text-sm font-bold hover:bg-blue-700 active:scale-95 transition shadow-sm">Guardar Cambios</button>
-                </form>
-            </div>
 
-            ${state.role === 'candidate' ? `
-            <div class="bg-white p-5 sm:p-8 rounded-2xl sm:rounded-3xl shadow-sm border border-slate-200/80">
-                <h3 class="text-base sm:text-lg font-extrabold text-slate-900 mb-1">Mis Habilidades & Conocimientos</h3>
-                <p class="text-[11px] sm:text-xs text-slate-500 mb-4 font-medium">Habilita el Smart Screening con tus aptitudes.</p>
-                
-                <div class="space-y-3.5 mb-5">
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Seleccionar Habilidad / Área</label>
-                        <select id="skill-name" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-semibold">
-                            <optgroup label="Nivel Académico">${academicOpt}</optgroup>
-                            <optgroup label="Informática & Marketing Digital">${coreOpt}</optgroup>
-                            <optgroup label="Otras Áreas Laborales">${otherOpt}</optgroup>
-                            <optgroup label="Aptitudes Personales">${softOpt}</optgroup>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-1">Nivel de Experiencia</label>
-                        <select id="skill-exp" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2.5 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-600 font-semibold">
-                            ${expOptions}
-                        </select>
-                    </div>
-                    <button onclick="addUserSkill()" class="bg-emerald-600 text-white px-4 py-2.5 rounded-xl text-xs sm:text-bold hover:bg-emerald-700 active:scale-95 transition shadow-sm">+ Agregar Habilidad</button>
+                        <div>
+                            <h4 class="text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-2">Habilidades Registradas:</h4>
+                            <div id="user-skills-badges" class="flex flex-wrap gap-1.5">
+                                <p class="text-xs text-slate-400 italic">Cargando habilidades...</p>
+                            </div>
+                        </div>
+                    </div>` : ''}
                 </div>
+            `;
 
-                <div>
-                    <h4 class="text-[10px] font-bold text-slate-700 uppercase tracking-wider mb-2">Habilidades Registradas:</h4>
-                    <div id="user-skills-badges" class="flex flex-wrap gap-1.5">
-                        <p class="text-xs text-slate-400 italic">Cargando habilidades...</p>
-                    </div>
-                </div>
-            </div>` : ''}
-        </div>
-    `;
+            if (state.role === 'candidate') { loadUserSkills(); }
+        }
 
-    if (state.role === 'candidate') { loadUserSkills(); }
-}
         async function loadUserSkills() {
             const badgesContainer = document.getElementById('user-skills-badges');
             if (!badgesContainer) return;
@@ -772,50 +766,34 @@ async function renderProfile(container) {
         }
 
         async function handleUpdateProfile(e) {
-    e.preventDefault();
-    const name = document.getElementById('prof-name').value;
-    const location = document.getElementById('prof-location').value;
-    const telefono = document.getElementById('prof-telefono')?.value || ''; // 📱 Captura el teléfono del input
+            e.preventDefault();
+            const name = document.getElementById('prof-name').value;
+            const location = document.getElementById('prof-location').value;
 
-    try {
-        const res = await fetch(`${API_URL}/profile`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${state.token}`
-            },
-            body: JSON.stringify({ 
-                name, 
-                location, 
-                telefono, // 📱 Se envía al backend
-                profile_picture: tempProfilePicBase64 
-            })
-        });
-        const data = await res.json();
-        if (res.ok) {
-            // Guardar en localStorage para que persista al refrescar o reiniciar la app
-            localStorage.setItem('name', data.user.name);
-            localStorage.setItem('location', data.user.location);
-            localStorage.setItem('telefono', data.user.telefono || '');
-            localStorage.setItem('profile_picture', data.user.profile_picture || '');
-
-            // Actualizar el estado global de la app
-            state.name = data.user.name;
-            state.location = data.user.location;
-            state.telefono = data.user.telefono || '';
-            state.profile_picture = data.user.profile_picture;
-
-            showToast('¡Perfil actualizado con éxito!');
-            renderProfile(document.getElementById('main-content'));
-            updateNav();
-        } else { 
-            showToast(data.error || 'Error al actualizar', 'error'); 
+            try {
+                const res = await fetch(`${API_URL}/profile`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${state.token}`
+                    },
+                    body: JSON.stringify({ name, location, profile_picture: tempProfilePicBase64 })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('name', data.user.name);
+                    localStorage.setItem('location', data.user.location);
+                    localStorage.setItem('profile_picture', data.user.profile_picture);
+                    state.name = data.user.name;
+                    state.location = data.user.location;
+                    state.profile_picture = data.user.profile_picture;
+                    showToast('¡Perfil actualizado con éxito!');
+                    renderProfile(document.getElementById('main-content'));
+                    updateNav();
+                } else { showToast(data.error, 'error'); }
+            } catch (err) { console.error(err); }
         }
-    } catch (err) { 
-        console.error(err);
-        showToast('Error de conexión con el servidor', 'error'); 
-    }
-}
+
         async function renderEmployerJobs(container) {
             container.innerHTML = `
                 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-5 animate-fade-in">
